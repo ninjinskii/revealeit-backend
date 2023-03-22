@@ -152,10 +152,26 @@ export class Board {
 
     }
 
-    killPiece(killer: Piece, target: Piece) {
+    killPieceAt(killer: Piece, x: number, y: number) {
         if (!killer.canKill) {
             return
         }
+
+        const victimSlot = this.slots[y][x]
+        const victim = victimSlot.piece
+
+        if (killer.playerId === victim.playerId) {
+            return
+        }
+
+        const victimPlayer = this.getActivePlayers().find(player => player.id === victim.playerId)
+
+        if (!victimPlayer) {
+            return
+        }
+
+        victimPlayer.pieces = victimPlayer.pieces.filter(piece => piece != victim)
+        victimSlot.piece = null
     }
 
     getActivePlayers(): ActivePlayer[] {

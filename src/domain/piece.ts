@@ -22,7 +22,7 @@ export class Shooter implements Piece {
     name = "explorer"
     allowedMovements = new OrthogonalAllowedMovement(1, 1)
     originSpawnDelta = { dX: 1, dY: 1 }
-    canKill = false
+    canKill = true
 
     constructor(public playerId: string) {}
 }
