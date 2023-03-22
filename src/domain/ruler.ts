@@ -5,7 +5,7 @@ import { Player } from "./player.ts";
 export class Ruler {
     // public const player max pecies = 2
     // public const piece_shooter_name = "shooter"
-    public static readonly BOARD_SIZE = 4
+    public static readonly BOARD_SIZE = 5
     public static readonly MIN_BOARD_SIZE = 2
     public static readonly ACTIVE_PLAYER_NUMBER = 2
 

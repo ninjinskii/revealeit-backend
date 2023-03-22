@@ -98,8 +98,6 @@ export class Board {
         }
 
         const revealedZone = strategy.resolve(this.flattenedSlots, slot)
-        console.log("revealedZone")
-        console.log(revealedZone)
         return revealedZone.filter(slot => slot.x === targetX && slot.y === targetY).length > 0
     }
 
@@ -115,29 +113,29 @@ export class Board {
 
     movePieceTo(piece: Piece, targetX: number, targetY: number) {
         if (!this.isSlotInBoard(targetX, targetY)) {
-            console.log("1")
+            console.log("Cannot move: slot is outside the board")
             return
         }
         
         if (!this.isMovementDistanceInBounds(piece, targetX, targetY)) {
-            console.log("2")
+            console.log("Cannot move: trying to move too fast")
             return
         }
         
         if (!this.isMovementInRevealedZone(piece, targetX, targetY)) {
-            console.log("3")
+            console.log("Cannot move: trying to move outside piece's revealed zone")
             return
         }
         
         if (!this.isSlotEmpty(targetX, targetY)) {
-            console.log("4")
+            console.log("Cannot move: slot is already taken")
             return
         }
         
         const pieceLocation = this.getPieceLocation(piece)
         
         if (pieceLocation === null) {
-            console.log("5")
+            console.log("Cannot move: cannot retrieve piece location")
             return
         }
 
@@ -154,11 +152,27 @@ export class Board {
 
     killPieceAt(killer: Piece, x: number, y: number) {
         if (!killer.canKill) {
+            console.log("This piece is not abilited to kill")
+            return
+        }
+
+        if (!this.isSlotInBoard(x, y)) {
+            console.log("Slot is outside the board")
+            return
+        }
+
+        if (this.isSlotEmpty(x, y)) {
+            console.log("Nothing to kill here")
             return
         }
 
         const victimSlot = this.slots[y][x]
         const victim = victimSlot.piece
+
+        if (!this.isMovementInRevealedZone(victim, x, y)) {
+            console.log("Trying to move outside piece's revealed zone")
+            return
+        }
 
         if (killer.playerId === victim.playerId) {
             return

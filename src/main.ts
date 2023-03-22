@@ -29,6 +29,4 @@ const players = [
 ]
 
 const board = new Board(players)
-// board.movePieceTo(p1Piece, 1, 0)
-board.killPieceAt(p1Shooter, 3, 3)
 board.draw()

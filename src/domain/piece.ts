@@ -19,8 +19,8 @@ export class Explorer implements Piece {
 }
 
 export class Shooter implements Piece {
-    name = "explorer"
-    allowedMovements = new OrthogonalAllowedMovement(1, 1)
+    name = "shooter"
+    allowedMovements = new OrthogonalAllowedMovement(1, 2)
     originSpawnDelta = { dX: 1, dY: 1 }
     canKill = true
 
