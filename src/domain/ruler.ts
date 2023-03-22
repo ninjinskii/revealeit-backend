@@ -14,7 +14,7 @@ export class Ruler {
             throw new Error(`Cannot set BOARD_SIZE under ${Ruler.MIN_BOARD_SIZE} (from rule MIN_BOARD_SIZE)`)
         }
 
-        board.slots.length === Ruler.BOARD_SIZE * Ruler.BOARD_SIZE
+        board.slots.flat(1).length === Ruler.BOARD_SIZE * Ruler.BOARD_SIZE
     }
      
     static ensureCorrectActivePlayerCount(board: Board) {

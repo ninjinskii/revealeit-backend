@@ -41,7 +41,8 @@ export class SpectatorPlayer implements Player {
 }
 
 export interface PlayerOrigin {
-    position: Slot
+    x: number
+    y: number
     xModifier: 1 | -1
     yModifier: 1 | -1
 }

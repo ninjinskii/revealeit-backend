@@ -1,31 +1,30 @@
 import { Board } from "./domain/board.ts";
-import { OrthogonalAllowedMovement } from "./domain/movement.ts";
 import { Explorer, Shooter } from "./domain/piece.ts";
 import { ActivePlayer } from "./domain/player.ts";
 import { Ruler } from "./domain/ruler.ts";
 
+const p1Piece = new Explorer("1")
 const players = [
     new ActivePlayer({        
-        id: 1, 
+        id: "1", 
         name: "Louis", 
         color: "", 
         pieces: [
-            new Explorer(),
-            new Shooter()
+            p1Piece,
         ],
-        origin: { position: { x: 1, y: 1 }, xModifier: 1, yModifier: 1 }
+        origin: { x: 0, y: 0, xModifier: 1, yModifier: 1 }
     }),
     new ActivePlayer({
-        id: 2, 
+        id: "2", 
         name: "Ennemi", 
         color: "", 
         pieces: [
-            new Explorer(),
-            new Shooter()
+            new Explorer("2"),
         ],
-        origin: { position: { x: Ruler.BOARD_SIZE, y: Ruler.BOARD_SIZE }, xModifier: -1, yModifier: -1 }
+        origin: { x: Ruler.BOARD_SIZE - 1, y: Ruler.BOARD_SIZE - 1, xModifier: -1, yModifier: -1 }
     }),
 ]
 
 const board = new Board(players)
+board.movePieceTo(p1Piece, 1, 0)
 board.draw()

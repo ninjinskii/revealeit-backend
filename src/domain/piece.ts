@@ -1,10 +1,9 @@
-import { Slot } from "./board.ts"
 import { OrthogonalAllowedMovement, AllowedMovement } from "./movement.ts"
 
 export interface Piece {
+    playerId: string
     name: string
     imagePath?: string
-    position: Slot
     allowedMovements: AllowedMovement
     canKill: boolean
     originSpawnDelta: { dX: number, dY: number }
@@ -12,16 +11,18 @@ export interface Piece {
 
 export class Explorer implements Piece {
     name = "explorer"
-    position = { x: -1, y: -1 }
     allowedMovements = new OrthogonalAllowedMovement(1, 1)
-    originSpawnDelta = { dX: 1, dY: 0 }
+    originSpawnDelta = { dX: 0, dY: 0 }
     canKill = false
+
+    constructor(public playerId: string) {}
 }
 
 export class Shooter implements Piece {
     name = "explorer"
-    position = { x: -1, y: -1 }
     allowedMovements = new OrthogonalAllowedMovement(1, 1)
     originSpawnDelta = { dX: 1, dY: 1 }
     canKill = false
+
+    constructor(public playerId: string) {}
 }

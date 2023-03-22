@@ -24,31 +24,31 @@ export interface MovementDeltaBounds {
 }
 
 interface SlotLookupStrategy {
-    resolve: (slots: Slot[], piece: Piece) => Slot[]
+    resolve: (allSlots: Slot[], currentPieceSlot: Slot) => Slot[]
 }
 
 class DefaultSlotLookupStrategy implements SlotLookupStrategy {
-    resolve(slots: Slot[], piece: Piece): Slot[] {
+    resolve(_allSlots: Slot[], _currentPieceSlot: Slot): Slot[] {
         return []
     }
 }
 
 class OrthogonalSlotLookupStrategy implements SlotLookupStrategy {
-    resolve(slots: Slot[], piece: Piece): Slot[] {
-        return slots.filter(slot => slot.x === piece.position.x || slot.y === piece.position.y)
+    resolve(allSlots: Slot[], currentPieceSlot: Slot): Slot[] {
+        return allSlots.filter(slot => slot.x === currentPieceSlot.x || slot.y === currentPieceSlot.y)
     }
 }
 
 class DiagonalSlotLookupStrategy implements SlotLookupStrategy {
-    resolve(slots: Slot[], piece: Piece): Slot[] {
-        return slots.filter(slot => slot.x - slot.y === piece.position.x - piece.position.y)
+    resolve(allSlots: Slot[], currentPieceSlot: Slot): Slot[] {
+        return allSlots.filter(slot => slot.x - slot.y === currentPieceSlot.x - currentPieceSlot.y)
     }
 }
 
 class AllDirectionsSlotLookupStrategy implements SlotLookupStrategy {
-    resolve(slots: Slot[], piece: Piece): Slot[] {
-        const orthogonal = new OrthogonalSlotLookupStrategy().resolve(slots, piece)
-        const diagonal = new DiagonalSlotLookupStrategy().resolve(slots, piece)
+    resolve(allSlots: Slot[], currentPieceSlot: Slot): Slot[] {
+        const orthogonal = new OrthogonalSlotLookupStrategy().resolve(allSlots, currentPieceSlot)
+        const diagonal = new DiagonalSlotLookupStrategy().resolve(allSlots, currentPieceSlot)
 
         return [...orthogonal, ...diagonal]
     }
