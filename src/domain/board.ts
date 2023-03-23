@@ -1,6 +1,9 @@
+import { BoardUpdateMessageSender } from "../network/message.ts"
 import { Piece } from "./piece.ts"
+import { SpectatorPlayer } from "./player"
 import { ActivePlayer, Player } from "./player.ts"
 import { Ruler } from "./ruler.ts"
+import { Turn } from "./turn.ts"
 
 export interface Slot {
     x: number
@@ -12,6 +15,8 @@ export class Board {
     slots: Slot[][] = []
     flattenedSlots: Slot[] = []
     waitingForAnotherPlayer = false
+    boardUpdateSender: BoardUpdateMessageSender
+    turn: Turn
 
     // Quan dune socket se ferme, s'il y a PLAYER_NUMBER, laisser le dernier joeur dans la lste des player pour sauvegarder son statut
     // stocker dans le localStorage le player id
@@ -23,6 +28,10 @@ export class Board {
         this.initPlayersPieces()
 
         Ruler.ensureCorrectBoardSize(this)
+
+        this.boardUpdateSender = new BoardUpdateMessageSender(this)
+        this.broadcastBoardUpdate()
+        this.turn.start()
     }
 
     generateSlots() {
@@ -85,7 +94,6 @@ export class Board {
         }
 
         const distance = this.getDistance(location.x, location.y, targetX, targetY)
-        console.log(`distance: ${distance}`)
         return distance >= bounds.min && distance <= bounds.max
     }
 
@@ -113,30 +121,25 @@ export class Board {
 
     movePieceTo(piece: Piece, targetX: number, targetY: number) {
         if (!this.isSlotInBoard(targetX, targetY)) {
-            console.log("Cannot move: slot is outside the board")
-            return
+            throw new Error("Cannot move: slot is outside the board")
         }
         
         if (!this.isMovementDistanceInBounds(piece, targetX, targetY)) {
-            console.log("Cannot move: trying to move too fast")
-            return
+            throw new Error("Cannot move: trying to move too fast")
         }
         
         if (!this.isMovementInRevealedZone(piece, targetX, targetY)) {
-            console.log("Cannot move: trying to move outside piece's revealed zone")
-            return
+            throw new Error("Cannot move: trying to move outside piece's revealed zone")
         }
         
         if (!this.isSlotEmpty(targetX, targetY)) {
-            console.log("Cannot move: slot is already taken")
-            return
+            throw new Error("Cannot move: slot is already taken")
         }
         
         const pieceLocation = this.getPieceLocation(piece)
         
         if (pieceLocation === null) {
-            console.log("Cannot move: cannot retrieve piece location")
-            return
+            throw new Error("Cannot move: cannot retrieve piece location")
         }
 
         const currentX = pieceLocation.x
@@ -144,48 +147,64 @@ export class Board {
 
         this.slots[currentY][currentX].piece = null
         this.slots[targetY][targetX].piece = piece
+        this.turn.registerMove()
+        this.broadcastBoardUpdate()
     }
 
-    getRevealedZoneForPlayer(player: ActivePlayer) {
+    getRevealedZoneForPlayer(player: ActivePlayer): Slot[]{
+        const zone: Slot[] = []
 
+        for (const piece of player.pieces) {
+            const strategy = piece.allowedMovements.slotRevealStrategy
+            const slot = this.getPieceSlot(piece)
+
+            if (!slot) {
+                continue
+            }
+
+            zone.push(...strategy.resolve(this.flattenedSlots, slot))
+        }
+
+        const deduplicates = (array) => array.filter((value, index, self) =>
+            index === self.findIndex((slot) => (slot.x === value.x && slot.y === value.y))
+        )
+
+        return deduplicates(zone)
     }
 
     killPieceAt(killer: Piece, x: number, y: number) {
         if (!killer.canKill) {
-            console.log("This piece is not abilited to kill")
-            return
+            throw new Error("Cannot kill: this piece is not abilited to kill")
         }
 
         if (!this.isSlotInBoard(x, y)) {
-            console.log("Slot is outside the board")
-            return
+            throw new Error("Cannot kill: slot is outside the board")
         }
 
         if (this.isSlotEmpty(x, y)) {
-            console.log("Nothing to kill here")
-            return
+            throw new Error("Cannot kill: nothing to kill here")
         }
 
         const victimSlot = this.slots[y][x]
         const victim = victimSlot.piece
 
         if (!this.isMovementInRevealedZone(victim, x, y)) {
-            console.log("Trying to move outside piece's revealed zone")
-            return
+            throw new Error("Cannot kill: trying to move outside piece's revealed zone")
         }
-
+        
         if (killer.playerId === victim.playerId) {
-            return
+            throw new Error("Cannot kill: trying to kill own piece")
         }
-
+        
         const victimPlayer = this.getActivePlayers().find(player => player.id === victim.playerId)
-
+        
         if (!victimPlayer) {
-            return
+            throw new Error("Cannot kill: unable to find targeted player")
         }
 
         victimPlayer.pieces = victimPlayer.pieces.filter(piece => piece != victim)
         victimSlot.piece = null
+        this.broadcastBoardUpdate()
     }
 
     getActivePlayers(): ActivePlayer[] {
@@ -195,24 +214,29 @@ export class Board {
     onPlayerDisconnection(playerId: string) {
         if (this.getActivePlayers().length < Ruler.ACTIVE_PLAYER_NUMBER) {
             this.waitingForAnotherPlayer = true
+            return        
         }
 
         // Remove player from array based on its id
     }
 
-    onPlayerConnection(playerId: string) {
-        const wasWaitingForAnotherPlayer = this.getActivePlayers().length === Ruler.ACTIVE_PLAYER_NUMBER - 1
+    onNewPlayerConnection(playerId: string, webSocket: WebSocket) {
+        // const wasWaitingForAnotherPlayer = this.getActivePlayers().length === Ruler.ACTIVE_PLAYER_NUMBER - 1
 
-        if (wasWaitingForAnotherPlayer) {
-            this.waitingForAnotherPlayer = false
-        }
+        // if (wasWaitingForAnotherPlayer) {
+        //     this.waitingForAnotherPlayer = false
+        // }
 
-        // Add player to array
+        this.players.push(new SpectatorPlayer(playerId, "Jean", webSocket))
     }
 
     onPlayerLost(player: ActivePlayer) {
         player.hasLost = true;
         player.pieces = []
+    }
+
+    broadcastBoardUpdate() {
+        this.players.forEach(player => this.boardUpdateSender.sendMessage(player))
     }
 
     draw() {

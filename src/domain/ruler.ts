@@ -8,6 +8,7 @@ export class Ruler {
     public static readonly BOARD_SIZE = 5
     public static readonly MIN_BOARD_SIZE = 2
     public static readonly ACTIVE_PLAYER_NUMBER = 2
+    public static readonly MOVE_PER_TURN = 2
 
     static ensureCorrectBoardSize(board: Board) {
         if (Ruler.BOARD_SIZE <= Ruler.MIN_BOARD_SIZE) {
