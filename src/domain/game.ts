@@ -1,20 +1,61 @@
-import { MessageHandlerFactory, MessageReceiver } from "../network/message.ts";
+import { WebSocketClient, WebSocketServer } from "../../deps.ts";
+import {
+  Action,
+  MessageHandlerFactory,
+  MessageReceiver,
+} from "../network/message.ts";
 import { Board } from "./board.ts";
-import { Player } from "./player.ts";
+import { Explorer, Shooter } from "./piece.ts";
+import { ActivePlayer, Player, PlayerOrigin } from "./player.ts";
+import { Ruler } from "./ruler.ts";
 
 // Bridges the gap between network and board
 export class Game {
-    constructor(public board: Board, public players: Player[], public serverWebSocket: WebSocketServer) {
-        this.initServerWebSocket()
-    }
+  public board: Board | null = null;
+  public names = ["Jean", "Paul", "Gauthier", "Roger"];
+  public origins: PlayerOrigin[] = [
+    { x: 0, y: 0, xModifier: 1, yModifier: 1 },
+    {
+      x: Ruler.BOARD_SIZE - 1,
+      y: Ruler.BOARD_SIZE - 1,
+      xModifier: -1,
+      yModifier: -1,
+    },
+    { x: 0, y: Ruler.BOARD_SIZE - 1, xModifier: 1, yModifier: -1 },
+    { x: Ruler.BOARD_SIZE - 1, y: 0, xModifier: -1, yModifier: 1 },
+  ];
 
-    initServerWebSocket() {
-        this.serverWebSocket.on("connection", function (webSocket: WebSocketClient) {
-            webSocket.on("message", function(message: string) {
-                const messageFactory = new MessageHandlerFactory(message, webSocket)
-                const messageReceiver = new MessageReceiver(this.board, messageFactory)
-                messageReceiver.handleMessage()
-            })
+  public pieces = (id: string) => [
+    new Explorer(id),
+    new Shooter(id),
+  ];
+
+  public started = false
+
+  constructor(
+    public players: Player[],
+    public serverWebSocket: WebSocketServer,
+  ) {
+    this.initServerWebSocket();
+  }
+
+  initServerWebSocket() {
+    this.serverWebSocket.on(
+      "connection",
+      (webSocket: WebSocketClient) => {
+        webSocket.on("message", (message: string) => {
+          console.log(message.split(":")[0]);
+          
+          const messageFactory = new MessageHandlerFactory(message, webSocket);
+          const messageReceiver = new MessageReceiver(this, messageFactory);
+          messageReceiver.handleMessage();
         });
-    }
+      },
+    );
+  }
+
+  start() {
+    this.started = true
+    this.board = new Board(this.players);
+  }
 }

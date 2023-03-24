@@ -1,16 +1,16 @@
 export enum OrthogonalDirections {
-    NORTH = "NORTH",
-    EAST = "EAST",
-    SOUTH = "SOUTH",
-    WEST = "WEST"
+  NORTH = "NORTH",
+  EAST = "EAST",
+  SOUTH = "SOUTH",
+  WEST = "WEST",
 }
 
 export enum DiagonalDirections {
-    NORTHEAST = "NORTHEAST",
-    NORTHWEST = "NORTHWEST",
-    SOUTHEAST = "SOUTHEAST",
-    SOUTHWEST = "SOUTHWEST"
+  NORTHEAST = "NORTHEAST",
+  NORTHWEST = "NORTHWEST",
+  SOUTHEAST = "SOUTHEAST",
+  SOUTHWEST = "SOUTHWEST",
 }
 
-const Directions = { ...OrthogonalDirections, ...DiagonalDirections }
-export type Directions = typeof Directions
+const Directions = { ...OrthogonalDirections, ...DiagonalDirections };
+export type Directions = typeof Directions;

@@ -1,28 +1,28 @@
-import { OrthogonalAllowedMovement, AllowedMovement } from "./movement.ts"
+import { AllowedMovement, OrthogonalAllowedMovement } from "./movement.ts";
 
 export interface Piece {
-    playerId: string
-    name: string
-    imagePath?: string
-    allowedMovements: AllowedMovement
-    canKill: boolean
-    originSpawnDelta: { dX: number, dY: number }
+  playerId: string;
+  name: string;
+  imagePath?: string;
+  allowedMovements: AllowedMovement;
+  canKill: boolean;
+  originSpawnDelta: { dX: number; dY: number };
 }
 
 export class Explorer implements Piece {
-    name = "explorer"
-    allowedMovements = new OrthogonalAllowedMovement(1, 1)
-    originSpawnDelta = { dX: 0, dY: 0 }
-    canKill = false
+  name = "explorer";
+  allowedMovements = new OrthogonalAllowedMovement(1, 1);
+  originSpawnDelta = { dX: 0, dY: 0 };
+  canKill = false;
 
-    constructor(public playerId: string) {}
+  constructor(public playerId: string) {}
 }
 
 export class Shooter implements Piece {
-    name = "shooter"
-    allowedMovements = new OrthogonalAllowedMovement(1, 2)
-    originSpawnDelta = { dX: 1, dY: 1 }
-    canKill = true
+  name = "shooter";
+  allowedMovements = new OrthogonalAllowedMovement(1, 2);
+  originSpawnDelta = { dX: 1, dY: 1 };
+  canKill = true;
 
-    constructor(public playerId: string) {}
+  constructor(public playerId: string) {}
 }

@@ -1,0 +1,24 @@
+version: "3.7"
+
+services:
+  server:
+    build: .
+    container_name: revealeit-backend.njk.localhost
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.revealeit-backend.rule=Host(`revealeit-backend.njk.localhost`)"
+      - "traefik.http.routers.revealeit-backend.tls=true"
+      - "traefik.docker.network=proxy"
+    networks:
+      - default
+      - proxy
+    volumes:
+      - ./:/app
+    ports:
+      - 5000:5000
+
+networks:
+  proxy:
+    external: true

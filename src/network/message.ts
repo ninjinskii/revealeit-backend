@@ -1,146 +1,215 @@
-import { Board } from "../domain/board.ts"
-import { Player, ActivePlayer } from "../domain/player.ts"
+import { WebSocketClient } from "../../deps.ts";
+import { Board } from "../domain/board.ts";
+import { Game } from "../domain/game.ts";
+import { ActivePlayer, Player, SpectatorPlayer } from "../domain/player.ts";
+import { Ruler } from "../domain/ruler.ts";
 
-enum Action {
-    MOVE = "move:",
-    KILL = "kill:",
-    BOARD = "board:",
-    PLAYERS = "players:",
-    ERROR = "error:",
-    HANDSHAKE = "handshake:",
-    TURN = "turn:",
-    LOG = "log:"
+export enum Action {
+  MOVE = "move",
+  KILL = "kill",
+  BOARD = "board",
+  PLAYERS = "players",
+  ERROR = "error",
+  HANDSHAKE = "handshake",
+  TURN = "turn",
+  LOG = "log",
 }
 
 export class MessageReceiver {
-    constructor(public board: Board, public factory: MessageHandlerFactory) {}
+  constructor(public game: Game, public factory: MessageHandlerFactory) {}
 
-    handleMessage() {
-        const handler = this.factory.getMessageHandler()
-        handler.handleMessage(this.board)
-    }
+  handleMessage() {
+    const handler = this.factory.getMessageHandler();
+    handler.handleMessage(this.game);
+  }
 }
 
 export class MessageHandlerFactory {
-    key: string
+  key: string;
 
-    constructor(public message: string, public webSocket: WebSocket) {
-        this.key = message.split(":")[0]
+  constructor(public message: string, public webSocket: WebSocketClient) {
+    this.key = message.split(":")[0];
+  }
+
+  getMessageHandler(): MessageHandler {
+    switch (this.key) {
+      case Action.MOVE:
+        return new MoveMessageHandler(this.message, this.webSocket);
+      case Action.KILL:
+        return new KillMessageHandler(this.message, this.webSocket);
+      case Action.HANDSHAKE:
+        return new HandshakeMessageHandler(this.message, this.webSocket);
     }
 
-    getMessageHandler(): MessageHandler {
-        switch(this.key) {
-            case Action.MOVE:
-                return new MoveMessageHandler(this.message, this.webSocket)
-            case Action.KILL:
-                return new KillMessageHandler(this.message, this.webSocket)
-            case Action.HANDSHAKE:
-                return new HandshakeMessageHandler(this.message, this.webSocket)
-        }
-
-        throw new Error("Cannot get a message handler: unknown message key")
-    }
+    throw new Error("Cannot get a message handler: unknown message key");
+  }
 }
 
 interface MessageHandler {
-    handleMessage(board: Board) 
+  handleMessage(game: Game): void;
 }
 
 interface MessageSender {
-    sendMessage(player: Player, board: Board) 
+  sendMessage(player: Player | WebSocketClient, board: Board): void;
 }
 
 class MoveMessageHandler implements MessageHandler {
-    constructor(public message: string, public webSocket: WebSocket) {}
+  constructor(public message: string, public webSocket: WebSocketClient) {}
 
-    handleMessage(board: Board) {
-        const content = this.message.split(":")[1]
-        const [fromX, fromY, toX, toY] = content.split(",")
-        const slot = board.slots[fromY][fromX]
-
-        try {
-            board.movePieceTo(slot.piece, toY, toX)
-        } catch(error) {
-            new ErrorMessageSender(error).sendMessage(this.webSocket)
-        }
+  handleMessage(game: Game) {
+    if (game.board === null) {
+      console.error("Try to handle message 'move' but board is null");
+      return;
     }
+
+    const content = this.message.split(":")[1];
+    const [fromX, fromY, toX, toY] = content.split(",").map((value) =>
+      parseInt(value)
+    );
+    const slot = game.board.slots[fromY][fromX];
+
+    try {
+      game.board.movePieceTo(slot.piece, toY, toX);
+    } catch (error) {
+      new ErrorMessageSender(error).sendMessage(this.webSocket);
+    }
+  }
 }
 
 class KillMessageHandler implements MessageHandler {
-    constructor(public message: string, public webSocket: WebSocket) {}
+  constructor(public message: string, public webSocket: WebSocketClient) {}
 
-    handleMessage(board: Board) {
-        const content = this.message.split(":")[1]
-        const [fromX, fromY, toX, toY] = content.split(",")
-        const slot = board.slots[fromY][fromX]
-
-        try {
-            board.killPieceAt(slot.piece, toY, toX)
-        } catch (error) {
-            new ErrorMessageSender(error).sendMessage(this.webSocket)
-        }
+  handleMessage(game: Game) {
+    if (game.board === null) {
+      console.error("Try to handle message 'kill' but board is null");
+      return;
     }
+
+    const content = this.message.split(":")[1];
+    const [fromX, fromY, toX, toY] = content.split(",").map((value) =>
+      parseInt(value)
+    );
+    const slot = game.board.slots[fromY][fromX];
+
+    try {
+      game.board.killPieceAt(slot.piece, toY, toX);
+    } catch (error) {
+      new ErrorMessageSender(error).sendMessage(this.webSocket);
+    }
+  }
 }
 
 class HandshakeMessageHandler implements MessageHandler {
-    constructor(public message: string, public webSocket: WebSocket) {}
+  constructor(public message: string, public webSocket: WebSocketClient) {}
 
-    handleMessage(board: Board) {
-        const playerId = this.message.split(":")[1]
-        const player = board.players.find(player => player.id === playerId)
+  handleMessage(game: Game) {
+    const playerId = this.message.split(":")[1];
+    const player = game.players.find((player) => player.id === playerId);
 
-        if (!player) {
-            board.onNewPlayerConnection(playerId)
-        } else {
-            player.webSocket = this.webSocket
-        }
+    if (!player) {
+      console.log("new player detected");
+      const playerCount = game.players.length;
+
+      if (playerCount >= Ruler.ACTIVE_PLAYER_NUMBER) {
+        this.addSpectatorPlayer(game, playerId);
+      } else {
+        this.addActivePlayer(game, playerId);
+      }
+
+      this.maybeStartGame(game);
+    } else {
+      console.log("player already exists ! Updtating its socket");
+      player.webSocket = this.webSocket;
+
+      if (game.board) {
+        const updateBoard = new BoardUpdateMessageSender(game.board)
+        updateBoard.sendMessage(player)
+      }
     }
+  }
+
+  private addActivePlayer(game: Game, playerId: string) {
+    const playerCount = game.players.length;
+
+    game.players.push(
+      new ActivePlayer({
+        id: playerId,
+        name: game.names[playerCount],
+        origin: game.origins[playerCount],
+        pieces: game.pieces(playerId),
+        webSocket: this.webSocket,
+      }),
+    );
+  }
+
+  private addSpectatorPlayer(game: Game, playerId: string) {
+    game.players.push(
+      new SpectatorPlayer(
+        playerId,
+        "spectator",
+        this.webSocket,
+      ),
+    );
+  }
+
+  private maybeStartGame(game: Game) {
+    if (game.players.length >= Ruler.ACTIVE_PLAYER_NUMBER) {
+      game.start();
+    }
+  }
 }
 
 export class BoardUpdateMessageSender implements MessageSender {
-    constructor(public board: Board) {}
+  constructor(public board: Board) {}
 
-    sendMessage(player: Player) {
-        const revealedZone = player instanceof ActivePlayer ? this.board.getRevealedZoneForPlayer(player) : this.board.flattenedSlots
+  sendMessage(player: Player) {
+    const revealedZone = player instanceof ActivePlayer
+      ? this.board.getRevealedZoneForPlayer(player)
+      : this.board.flattenedSlots;
 
-        const message = `${Action.BOARD}${JSON.stringify(revealedZone)}`
-        player.webSocket.send(message)
-    }
+    console.log("send an update board message")
+
+    const message = `${Action.BOARD}:${JSON.stringify(revealedZone).replaceAll(":", "@")}`;
+    player.webSocket.send(message);
+  }
 }
 
 export class PlayersMessageSender implements MessageSender {
-    constructor(public board: Board) {}
+  constructor(public board: Board) {}
 
-    sendMessage(player: Player) {
-        const notLoosers = this.board.getActivePlayers().filter(player => player.hasLost = false).map(player => player.id)
-        const message = `${Action.PLAYERS}${notLoosers.join(",")}`
-        player.webSocket.send(message)
-    }
+  sendMessage(player: Player) {
+    const notLoosers = this.board.getActivePlayers().filter((player) =>
+      player.hasLost = false
+    ).map((player) => player.id);
+
+    const message = `${Action.PLAYERS}:${notLoosers.join(",")}`;
+    player.webSocket.send(message);
+  }
 }
 
 export class TurnMessageSender implements MessageSender {
-    constructor(public board: Board) {}
+  constructor(public board: Board) {}
 
-    sendMessage(player: Player) {
-        const message = `${Action.TURN}${player.id}`
-        player.webSocket.send(message)
-    }
+  sendMessage(player: Player) {
+    const message = `${Action.TURN}:${player.id}`;
+    player.webSocket.send(message);
+  }
 }
 
 class ErrorMessageSender implements MessageSender {
-    constructor(public error: Error) {}
+  constructor(public error: Error) {}
 
-    sendMessage(player: Player) {
-        const message = `${Action.ERROR}${this.error.message}`
-        player.webSocket.send(message)
-    }
+  sendMessage(webSocket: WebSocketClient) {
+    const message = `${Action.ERROR}:${this.error.message}`;
+    webSocket.send(message);
+  }
 }
 
 class LogMessageSender implements MessageSender {
-    constructor(public log: String) {}
+  constructor(public log: string) {}
 
-    sendMessage(player: Player) {
-        const message = `${Action.LOG}${this.log}`
-        player.webSocket.send(message)
-    }
+  sendMessage(webSocket: WebSocketClient) {
+    const message = `${Action.LOG}:${this.log}`;
+    webSocket.send(message);
+  }
 }
