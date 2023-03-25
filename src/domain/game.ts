@@ -6,7 +6,7 @@ import {
 } from "../network/message.ts";
 import { Board } from "./board.ts";
 import { Explorer, Shooter } from "./piece.ts";
-import { Player, PlayerOrigin } from "./player.ts";
+import { ActivePlayer, Player, PlayerOrigin } from "./player.ts";
 import { Ruler } from "./ruler.ts";
 
 // Bridges the gap between network and board
@@ -47,6 +47,10 @@ export class Game {
           const messageReceiver = new MessageReceiver(this, messageFactory);
           messageReceiver.handleMessage();
         });
+
+        webSocket.on("close", () => {
+          this.restart()
+        });
       },
     );
   }
@@ -56,8 +60,8 @@ export class Game {
   }
 
   restart() {
-    this.players = []
-    this.board = null
+    this.players = [];
+    this.board = null;
   }
 
   brodcastMessage(message: MessageSender) {
