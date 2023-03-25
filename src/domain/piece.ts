@@ -26,3 +26,18 @@ export class Shooter implements Piece {
 
   constructor(public playerId: string) {}
 }
+
+export class PieceDTO {
+  constructor(
+    public playerId: string,
+    public name: string,
+  ) {}
+
+  public static fromPiece(piece: Piece | null): PieceDTO | null {
+    if (piece === null) {
+      return null
+    }
+
+    return new PieceDTO(piece.playerId, piece.name)
+  }
+}

@@ -1,6 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
 import { Game } from "../domain/game.ts";
+import { PieceDTO } from "../domain/piece.ts";
 import { ActivePlayer, Player, SpectatorPlayer } from "../domain/player.ts";
 import { Ruler } from "../domain/ruler.ts";
 
@@ -122,8 +123,8 @@ class HandshakeMessageHandler implements MessageHandler {
       player.webSocket = this.webSocket;
 
       if (game.board) {
-        const updateBoard = new BoardUpdateMessageSender(game.board)
-        updateBoard.sendMessage(player)
+        const updateBoard = new BoardUpdateMessageSender(game.board);
+        updateBoard.sendMessage(player);
       }
     }
   }
@@ -167,9 +168,15 @@ export class BoardUpdateMessageSender implements MessageSender {
       ? this.board.getRevealedZoneForPlayer(player)
       : this.board.flattenedSlots;
 
-    console.log("send an update board message")
+    const compressedRevealedZone = revealedZone.map((slot) => ({
+      x: slot.x,
+      y: slot.y,
+      piece: PieceDTO.fromPiece(slot.piece),
+    }));
 
-    const message = `${Action.BOARD}:${JSON.stringify(revealedZone).replaceAll(":", "@")}`;
+    const message = `${Action.BOARD}:${
+      JSON.stringify(compressedRevealedZone).replaceAll(":", "@")
+    }`;
     player.webSocket.send(message);
   }
 }
