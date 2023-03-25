@@ -1,4 +1,5 @@
 import { BoardUpdateMessageSender } from "../network/message.ts";
+import { Game } from "./game.ts";
 import { Piece } from "./piece.ts";
 import { ActivePlayer, Player } from "./player.ts";
 import { Ruler } from "./ruler.ts";
@@ -17,10 +18,7 @@ export class Board {
   boardUpdateSender: BoardUpdateMessageSender;
   turn: Turn;
 
-  // Quan dune socket se ferme, s'il y a PLAYER_NUMBER, laisser le dernier joeur dans la lste des player pour sauvegarder son statut
-  // stocker dans le localStorage le player id
-
-  constructor(public players: Player[]) {
+  constructor(public players: Player[], public game: Game) {
     Ruler.ensureCorrectActivePlayerCount(this);
 
     this.generateSlots();
@@ -315,6 +313,11 @@ export class Board {
     }
 
     this.broadcastBoardUpdate();
+    this.turn.checkLooseCondition();
+
+    if (this.doWeHaveAWinner()) {
+      this.game.restart()
+    }
   }
 
   getActivePlayers(): ActivePlayer[] {
@@ -336,6 +339,18 @@ export class Board {
     this.players.forEach((player) =>
       this.boardUpdateSender.sendMessage(player)
     );
+  }
+
+  public doWeHaveAWinner(): string | null {
+    const notLoosers = this.getActivePlayers().filter((player) =>
+      !player.hasLost
+    );
+
+    if (notLoosers.length === 1) {
+      return notLoosers[0].name;
+    }
+
+    return null;
   }
 
   draw() {

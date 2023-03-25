@@ -29,9 +29,6 @@ export class Game {
     new Explorer(id),
     new Shooter(id),
   ];
-
-  public started = false;
-
   constructor(
     public players: Player[],
     public serverWebSocket: WebSocketServer,
@@ -55,8 +52,12 @@ export class Game {
   }
 
   start() {
-    this.started = true;
-    this.board = new Board(this.players);
+    this.board = new Board(this.players, this);
+  }
+
+  restart() {
+    this.players = []
+    this.board = null
   }
 
   brodcastMessage(message: MessageSender) {

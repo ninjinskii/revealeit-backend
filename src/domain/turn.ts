@@ -1,5 +1,6 @@
 import { PlayersMessageSender, TurnMessageSender } from "../network/message.ts";
 import { Board } from "./board.ts";
+import { Game } from "./game.ts";
 import { NoMorePieceLooseCondition } from "./loose-condition.ts";
 import { ActivePlayer } from "./player.ts";
 import { Ruler } from "./ruler.ts";
@@ -9,9 +10,9 @@ export class Turn {
   private moveCount = 0;
   private turnMessageSender: TurnMessageSender;
   private playersMessageSender: PlayersMessageSender;
-  public waitForKill = false
+  public waitForKill = false;
 
-  constructor(public board: Board) {
+  constructor(public game: Game, public board: Board) {
     this.turnMessageSender = new TurnMessageSender(board);
     this.playersMessageSender = new PlayersMessageSender(board);
   }
@@ -27,32 +28,34 @@ export class Turn {
   }
 
   public end() {
+    this.moveCount = 0;
     this.currentPlayerPosition = ++this.currentPlayerPosition %
       Ruler.ACTIVE_PLAYER_NUMBER;
-    this.moveCount = 0;
+
     this.checkLooseCondition();
     this.start();
   }
 
   public registerPlay() {
     const hasReachedMaxMove = ++this.moveCount === Ruler.MOVE_PER_TURN;
-    const player = this.getCurrentPlayer()
-    const killAvailables = this.board.getKillableSlotsForPlayer(player).length > 0
-    this.waitForKill = hasReachedMaxMove && killAvailables
+    const player = this.getCurrentPlayer();
+    const killAvailables =
+      this.board.getKillableSlotsForPlayer(player).length > 0;
+    this.waitForKill = hasReachedMaxMove && killAvailables;
 
     if (hasReachedMaxMove && !this.waitForKill) {
       this.end();
     }
   }
 
-  private checkLooseCondition(): boolean {
+  public checkLooseCondition() {
     const looseCondition = new NoMorePieceLooseCondition();
     const looser = this.board.getActivePlayers().find((player) =>
       looseCondition.hasLost(this.board, player)
     );
 
     if (!looser) {
-      return false;
+      return;
     }
 
     looser.hasLost = true;
@@ -60,7 +63,5 @@ export class Turn {
     this.board.players.forEach((player) =>
       this.playersMessageSender.sendMessage(player)
     );
-
-    return true;
   }
 }
