@@ -29,7 +29,7 @@ export class Board {
     Ruler.ensureCorrectBoardSize(this);
 
     this.boardUpdateSender = new BoardUpdateMessageSender(this);
-    this.broadcastBoardUpdate()
+    this.broadcastBoardUpdate();
     this.turn = new Turn(this);
     this.turn.start();
   }
@@ -125,6 +125,44 @@ export class Board {
     ).length > 0;
   }
 
+  getRevealedZoneForPiece(piece: Piece) {
+    const slot = this.getPieceSlot(piece);
+
+    if (!slot) {
+      throw new Error(
+        "Cannot get revealed zone for piece: piece slot not found",
+      );
+    }
+
+    return piece.allowedMovements.slotRevealStrategy.resolve(
+      this.flattenedSlots,
+      slot,
+    );
+  }
+
+  // TODO: rename AllowedMovement to Zone
+  getKillableSlotsForPlayer(player: ActivePlayer): Slot[] {
+    const killers = player.pieces.filter((piece) =>
+      piece.canKill && piece.allowedKills
+    );
+
+    const presumableVictims = killers.map((killer) => {
+      const slot = this.getPieceSlot(killer);
+
+      if (!slot) {
+        throw new Error(
+          "Cannot get killable pieces: piece slot not found",
+        );
+      }
+
+      return killer.allowedKills!.slotRevealStrategy
+        .resolve(this.flattenedSlots, slot)
+        .filter((slot) => slot.piece && slot.piece.playerId !== player.id);
+    }).flat(1);
+
+    return presumableVictims;
+  }
+
   getPieceLocation(piece: Piece): { x: number; y: number } | null {
     const slot = this.flattenedSlots.find((slot) => slot.piece == piece);
     return slot === undefined ? null : { x: slot.x, y: slot.y };
@@ -186,8 +224,6 @@ export class Board {
 
       zone.push(...strategy.resolve(this.flattenedSlots, slot));
     }
-
-    return zone
 
     const deduplicates = (array: Slot[]) =>
       array.filter((value, index, self) =>

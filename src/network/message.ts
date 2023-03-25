@@ -106,22 +106,22 @@ class HandshakeMessageHandler implements MessageHandler {
   handleMessage(game: Game) {
     const [playerId, playerName] = this.message.split(":")[1].split(",");
     const player = game.players.find((player) => player.id === playerId);
-    
+
     if (!player) {
       console.log("new player detected");
       const playerCount = game.players.length;
-      
+
       if (playerCount >= Ruler.ACTIVE_PLAYER_NUMBER) {
         this.addSpectatorPlayer(game, playerId, playerName);
       } else {
         this.addActivePlayer(game, playerId, playerName);
       }
-      
+
       this.maybeStartGame(game);
     } else {
       console.log("player already exists ! Updtating its socket");
       player.webSocket = this.webSocket;
-      
+
       if (game.board) {
         const updatePlayers = new PlayersMessageSender(game.board);
         const updateBoard = new BoardUpdateMessageSender(game.board);
@@ -176,9 +176,23 @@ export class BoardUpdateMessageSender implements MessageSender {
       piece: PieceDTO.fromPiece(slot.piece),
     }));
 
+    const result = { revealed: compressedRevealedZone, killable: [] };
+
+    if (player instanceof ActivePlayer) {
+      const playerKills = this.board.getKillableSlotsForPlayer(player).map(
+        (slot) => ({
+          x: slot.x,
+          y: slot.y,
+          piece: PieceDTO.fromPiece(slot.piece),
+        })
+      );
+      result.killable = playerKills as never[];
+    }
+
     const message = `${Action.BOARD}:${
-      JSON.stringify(compressedRevealedZone).replaceAll(":", "@")
+      JSON.stringify(result).replaceAll(":", "@")
     }`;
+
     player.webSocket.send(message);
   }
 }

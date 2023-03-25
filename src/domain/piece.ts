@@ -1,10 +1,12 @@
 import { AllowedMovement, OrthogonalAllowedMovement } from "./movement.ts";
+import { Ruler } from "./ruler.ts";
 
 export interface Piece {
   playerId: string;
   name: string;
   imagePath?: string;
   allowedMovements: AllowedMovement;
+  allowedKills?: AllowedMovement;
   canKill: boolean;
   originSpawnDelta: { dX: number; dY: number };
 }
@@ -21,8 +23,9 @@ export class Explorer implements Piece {
 export class Shooter implements Piece {
   name = "shooter";
   allowedMovements = new OrthogonalAllowedMovement(1, 2);
-  originSpawnDelta = { dX: 1, dY: 1 };
+  allowedKills = new OrthogonalAllowedMovement(1, Ruler.BOARD_SIZE);
   canKill = true;
+  originSpawnDelta = { dX: 1, dY: 1 };
 
   constructor(public playerId: string) {}
 }
@@ -36,9 +39,9 @@ export class PieceDTO {
 
   public static fromPiece(piece: Piece | null): PieceDTO | null {
     if (piece === null) {
-      return null
+      return null;
     }
 
-    return new PieceDTO(piece.playerId, piece.name, piece.canKill)
+    return new PieceDTO(piece.playerId, piece.name, piece.canKill);
   }
 }
