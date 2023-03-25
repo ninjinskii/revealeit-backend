@@ -28,7 +28,7 @@ export class Board {
 
     this.boardUpdateSender = new BoardUpdateMessageSender(this);
     this.broadcastBoardUpdate();
-    this.turn = new Turn(this);
+    this.turn = new Turn(this.game, this);
     this.turn.start();
   }
 
