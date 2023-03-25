@@ -1,8 +1,11 @@
 import { WebSocketClient, WebSocketServer } from "../../deps.ts";
 import {
   Action,
+  BoardUpdateMessageSender,
   MessageHandlerFactory,
   MessageReceiver,
+  MessageSender,
+PlayersMessageSender,
 } from "../network/message.ts";
 import { Board } from "./board.ts";
 import { Explorer, Shooter } from "./piece.ts";
@@ -30,7 +33,7 @@ export class Game {
     new Shooter(id),
   ];
 
-  public started = false
+  public started = false;
 
   constructor(
     public players: Player[],
@@ -45,7 +48,7 @@ export class Game {
       (webSocket: WebSocketClient) => {
         webSocket.on("message", (message: string) => {
           console.log(message.split(":")[0]);
-          
+
           const messageFactory = new MessageHandlerFactory(message, webSocket);
           const messageReceiver = new MessageReceiver(this, messageFactory);
           messageReceiver.handleMessage();
@@ -55,7 +58,15 @@ export class Game {
   }
 
   start() {
-    this.started = true
+    this.started = true;
     this.board = new Board(this.players);
+  }
+
+  brodcastMessage(message: MessageSender) {
+    if (this.board) {
+      throw new Error("Cannot braodcast message: board is not ready yet");
+    }
+
+    this.players.forEach((player) => message.sendMessage(player, this.board!));
   }
 }

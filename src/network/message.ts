@@ -64,7 +64,7 @@ class MoveMessageHandler implements MessageHandler {
     }
 
     const content = this.message.split(":")[1];
-    const [fromX, fromY, toX, toY] = content.split(",").map((value) =>
+    const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
       parseInt(value)
     );
     const slot = game.board.slots[fromY][fromX];
@@ -106,25 +106,27 @@ class HandshakeMessageHandler implements MessageHandler {
   handleMessage(game: Game) {
     const [playerId, playerName] = this.message.split(":")[1].split(",");
     const player = game.players.find((player) => player.id === playerId);
-
+    
     if (!player) {
       console.log("new player detected");
       const playerCount = game.players.length;
-
+      
       if (playerCount >= Ruler.ACTIVE_PLAYER_NUMBER) {
         this.addSpectatorPlayer(game, playerId, playerName);
       } else {
         this.addActivePlayer(game, playerId, playerName);
       }
-
+      
       this.maybeStartGame(game);
     } else {
       console.log("player already exists ! Updtating its socket");
       player.webSocket = this.webSocket;
-
+      
       if (game.board) {
+        const updatePlayers = new PlayersMessageSender(game.board);
         const updateBoard = new BoardUpdateMessageSender(game.board);
         updateBoard.sendMessage(player);
+        updatePlayers.sendMessage(player);
       }
     }
   }
@@ -186,10 +188,10 @@ export class PlayersMessageSender implements MessageSender {
 
   sendMessage(player: Player) {
     const notLoosers = this.board.getActivePlayers().filter((player) =>
-      player.hasLost = false
-    ).map((player) => `${player.id}|${PlayersMessageSender.name}`);
+      player.hasLost === false
+    ).map((player) => `${player.id},${player.name}`);
 
-    const message = `${Action.PLAYERS}:${notLoosers.join(",")}`;
+    const message = `${Action.PLAYERS}:${notLoosers.join("|")}`;
     player.webSocket.send(message);
   }
 }

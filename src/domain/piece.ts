@@ -31,6 +31,7 @@ export class PieceDTO {
   constructor(
     public playerId: string,
     public name: string,
+    public canKill: boolean,
   ) {}
 
   public static fromPiece(piece: Piece | null): PieceDTO | null {
@@ -38,6 +39,6 @@ export class PieceDTO {
       return null
     }
 
-    return new PieceDTO(piece.playerId, piece.name)
+    return new PieceDTO(piece.playerId, piece.name, piece.canKill)
   }
 }

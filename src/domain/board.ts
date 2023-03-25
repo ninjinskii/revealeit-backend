@@ -29,8 +29,7 @@ export class Board {
     Ruler.ensureCorrectBoardSize(this);
 
     this.boardUpdateSender = new BoardUpdateMessageSender(this);
-    this.broadcastBoardUpdate();
-
+    this.broadcastBoardUpdate()
     this.turn = new Turn(this);
     this.turn.start();
   }
