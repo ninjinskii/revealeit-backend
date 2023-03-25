@@ -234,13 +234,15 @@ export class Board {
     return deduplicates(zone);
   }
 
-  killPieceAt(killer: Piece | null, x: number, y: number) {
-    if (!killer) {
-      throw new Error("Cannot kill: killer not found");
-    }
+  killPieceAt(player: ActivePlayer, x: number, y: number) {
+    const isAllowedToKill = this.getKillableSlotsForPlayer(player).find((
+      slot,
+    ) => slot.x === x && slot.y === y);
 
-    if (!killer.canKill) {
-      throw new Error("Cannot kill: this piece is not abilited to kill");
+    if (!isAllowedToKill) {
+      throw new Error(
+        `Cannot kill: ${player.id} cannot kill piece at ${x},${y}`,
+      );
     }
 
     if (!this.isSlotInBoard(x, y)) {
@@ -264,7 +266,7 @@ export class Board {
       );
     }
 
-    if (killer.playerId === victim.playerId) {
+    if (player.id === victim.playerId) {
       throw new Error("Cannot kill: trying to kill own piece");
     }
 

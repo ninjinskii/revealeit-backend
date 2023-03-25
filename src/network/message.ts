@@ -87,14 +87,19 @@ class KillMessageHandler implements MessageHandler {
     }
 
     const content = this.message.split(":")[1];
-    const [fromX, fromY, toX, toY] = content.split(",").map((value) =>
-      parseInt(value)
+    const [playerId, toX, toY] = content.split(",");
+    const player = game.board.getActivePlayers().find((player) =>
+      player.id === playerId
     );
-    const slot = game.board.slots[fromY][fromX];
 
     try {
-      game.board.killPieceAt(slot.piece, toY, toX);
+      if (!player) {
+        throw new Error("Cannot kill piece: killer player not found");
+      }
+
+      game.board.killPieceAt(player, parseInt(toX), parseInt(toY));
     } catch (error) {
+      console.error(error);
       new ErrorMessageSender(error).sendMessage(this.webSocket);
     }
   }
@@ -184,7 +189,7 @@ export class BoardUpdateMessageSender implements MessageSender {
           x: slot.x,
           y: slot.y,
           piece: PieceDTO.fromPiece(slot.piece),
-        })
+        }),
       );
       result.killable = playerKills as never[];
     }
