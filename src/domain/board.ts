@@ -174,8 +174,26 @@ export class Board {
   }
 
   movePieceTo(piece: Piece | null, targetX: number, targetY: number) {
+    if (this.turn.waitForKill) {
+      throw new Error(
+        "Cannot move: max play coutn reached, waiting for a kill",
+      );
+    }
+
     if (!piece) {
       throw new Error("Cannot move: mover not found");
+    }
+
+    const player = this.players.find((player) => player.id === piece.playerId);
+
+    if (!player) {
+      throw new Error(
+        "Cannot move: player associated with moving piece does not exists",
+      );
+    }
+
+    if (!this.isPlayerTurn(player)) {
+      throw new Error("Cannot move: wait for player turn");
     }
 
     if (!this.isSlotInBoard(targetX, targetY)) {
@@ -207,7 +225,7 @@ export class Board {
 
     this.slots[currentY][currentX].piece = null;
     this.slots[targetY][targetX].piece = piece;
-    this.turn.registerMove();
+    this.turn.registerPlay();
     this.broadcastBoardUpdate();
   }
 
@@ -235,6 +253,10 @@ export class Board {
   }
 
   killPieceAt(player: ActivePlayer, x: number, y: number) {
+    if (!this.isPlayerTurn(player)) {
+      throw new Error("Cannot move: wait for player turn");
+    }
+
     const isAllowedToKill = this.getKillableSlotsForPlayer(player).find((
       slot,
     ) => slot.x === x && slot.y === y);
@@ -282,6 +304,16 @@ export class Board {
       piece != victim
     );
     victimSlot.piece = null;
+
+    if (Ruler.COUNT_KILL_AS_TURN_MOVE) {
+      this.turn.registerPlay();
+    }
+
+    if (this.turn.waitForKill) {
+      this.turn.waitForKill = false;
+      this.turn.end();
+    }
+
     this.broadcastBoardUpdate();
   }
 
@@ -291,13 +323,8 @@ export class Board {
     ) as ActivePlayer[];
   }
 
-  onPlayerDisconnection(playerId: string) {
-    if (this.getActivePlayers().length < Ruler.ACTIVE_PLAYER_NUMBER) {
-      this.waitingForAnotherPlayer = true;
-      return;
-    }
-
-    // Remove player from array based on its id
+  isPlayerTurn(player: Player): boolean {
+    return this.turn.getCurrentPlayer().id === player.id;
   }
 
   onPlayerLost(player: ActivePlayer) {

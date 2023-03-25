@@ -1,15 +1,12 @@
 import { WebSocketClient, WebSocketServer } from "../../deps.ts";
 import {
-  Action,
-  BoardUpdateMessageSender,
   MessageHandlerFactory,
   MessageReceiver,
   MessageSender,
-PlayersMessageSender,
 } from "../network/message.ts";
 import { Board } from "./board.ts";
 import { Explorer, Shooter } from "./piece.ts";
-import { ActivePlayer, Player, PlayerOrigin } from "./player.ts";
+import { Player, PlayerOrigin } from "./player.ts";
 import { Ruler } from "./ruler.ts";
 
 // Bridges the gap between network and board

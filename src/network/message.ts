@@ -219,7 +219,8 @@ export class TurnMessageSender implements MessageSender {
   constructor(public board: Board) {}
 
   sendMessage(player: Player) {
-    const message = `${Action.TURN}:${player.id}`;
+    const currentPlayer = this.board.turn.getCurrentPlayer()
+    const message = `${Action.TURN}:${currentPlayer.id}`;
     player.webSocket.send(message);
   }
 }

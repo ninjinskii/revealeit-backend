@@ -9,6 +9,7 @@ export class Turn {
   private moveCount = 0;
   private turnMessageSender: TurnMessageSender;
   private playersMessageSender: PlayersMessageSender;
+  public waitForKill = false
 
   constructor(public board: Board) {
     this.turnMessageSender = new TurnMessageSender(board);
@@ -25,7 +26,7 @@ export class Turn {
     );
   }
 
-  private end() {
+  public end() {
     this.currentPlayerPosition = ++this.currentPlayerPosition %
       Ruler.ACTIVE_PLAYER_NUMBER;
     this.moveCount = 0;
@@ -33,8 +34,13 @@ export class Turn {
     this.start();
   }
 
-  public registerMove() {
-    if (++this.moveCount === Ruler.MOVE_PER_TURN - 1) {
+  public registerPlay() {
+    const hasReachedMaxMove = ++this.moveCount === Ruler.MOVE_PER_TURN;
+    const player = this.getCurrentPlayer()
+    const killAvailables = this.board.getKillableSlotsForPlayer(player).length > 0
+    this.waitForKill = hasReachedMaxMove && killAvailables
+
+    if (hasReachedMaxMove && !this.waitForKill) {
       this.end();
     }
   }
@@ -50,7 +56,7 @@ export class Turn {
     }
 
     looser.hasLost = true;
-    this.board.onPlayerLost(looser)
+    this.board.onPlayerLost(looser);
     this.board.players.forEach((player) =>
       this.playersMessageSender.sendMessage(player)
     );
