@@ -50,7 +50,7 @@ interface MessageHandler {
   handleMessage(game: Game): void;
 }
 
-interface MessageSender {
+export interface MessageSender {
   sendMessage(player: Player | WebSocketClient, board: Board): void;
 }
 
@@ -104,7 +104,7 @@ class HandshakeMessageHandler implements MessageHandler {
   constructor(public message: string, public webSocket: WebSocketClient) {}
 
   handleMessage(game: Game) {
-    const playerId = this.message.split(":")[1];
+    const [playerId, playerName] = this.message.split(":")[1].split(",");
     const player = game.players.find((player) => player.id === playerId);
 
     if (!player) {
@@ -112,9 +112,9 @@ class HandshakeMessageHandler implements MessageHandler {
       const playerCount = game.players.length;
 
       if (playerCount >= Ruler.ACTIVE_PLAYER_NUMBER) {
-        this.addSpectatorPlayer(game, playerId);
+        this.addSpectatorPlayer(game, playerId, playerName);
       } else {
-        this.addActivePlayer(game, playerId);
+        this.addActivePlayer(game, playerId, playerName);
       }
 
       this.maybeStartGame(game);
@@ -129,13 +129,13 @@ class HandshakeMessageHandler implements MessageHandler {
     }
   }
 
-  private addActivePlayer(game: Game, playerId: string) {
+  private addActivePlayer(game: Game, playerId: string, playerName: string) {
     const playerCount = game.players.length;
 
     game.players.push(
       new ActivePlayer({
         id: playerId,
-        name: game.names[playerCount],
+        name: playerName,
         origin: game.origins[playerCount],
         pieces: game.pieces(playerId),
         webSocket: this.webSocket,
@@ -143,11 +143,11 @@ class HandshakeMessageHandler implements MessageHandler {
     );
   }
 
-  private addSpectatorPlayer(game: Game, playerId: string) {
+  private addSpectatorPlayer(game: Game, playerId: string, playerName: string) {
     game.players.push(
       new SpectatorPlayer(
         playerId,
-        "spectator",
+        playerName,
         this.webSocket,
       ),
     );
@@ -187,7 +187,7 @@ export class PlayersMessageSender implements MessageSender {
   sendMessage(player: Player) {
     const notLoosers = this.board.getActivePlayers().filter((player) =>
       player.hasLost = false
-    ).map((player) => player.id);
+    ).map((player) => `${player.id}|${PlayersMessageSender.name}`);
 
     const message = `${Action.PLAYERS}:${notLoosers.join(",")}`;
     player.webSocket.send(message);
