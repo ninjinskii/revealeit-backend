@@ -11,13 +11,16 @@ export interface Slot {
 }
 
 export class Board {
-  slots: Slot[][] = [];
-  flattenedSlots: Slot[] = [];
-  waitingForAnotherPlayer = false;
-  boardUpdateSender: BoardUpdateMessageSender;
-  turn: Turn;
+  public players: Player[] = [];
+  public flattenedSlots: Slot[] = [];
+  public turn = new Turn(this);
 
-  constructor(public players: Player[]) {
+  private slots: Slot[][] = [];
+  private boardUpdateSender = new BoardUpdateMessageSender(this);
+
+  init(players: Player[]) {
+    this.players = players;
+
     Ruler.ensureCorrectActivePlayerCount(this);
 
     this.generateSlots();
@@ -25,9 +28,7 @@ export class Board {
 
     Ruler.ensureCorrectBoardSize(this);
 
-    this.boardUpdateSender = new BoardUpdateMessageSender(this);
     this.broadcastBoardUpdate();
-    this.turn = new Turn(this);
     this.turn.start();
   }
 

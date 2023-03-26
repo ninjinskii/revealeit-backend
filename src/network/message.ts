@@ -1,7 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
 import { PieceDTO } from "../domain/piece.ts";
-import { ActivePlayer, Player } from "../domain/player.ts";
+import { ActivePlayer, Player, SpectatorPlayer } from "../domain/player.ts";
 import { Ruler } from "../domain/ruler.ts";
 
 export enum Action {
@@ -16,37 +16,27 @@ export enum Action {
 }
 
 export class MessageReceiver {
-  private board?: Board;
-
   constructor(private factory: MessageHandlerFactory) {}
 
-  setBoard(board: Board) {
-    this.board = board;
-  }
-
-  handleMessage() {
-    // this.factory.messageReceiver = this;
-
-    const handler = this.factory.getMessageHandler(this);
-    handler.handleMessage(this.board);
+  handleMessage(board?: Board) {
+    const handler = this.factory.getMessageHandler();
+    handler.handleMessage(board);
   }
 }
 
 export class MessageHandlerFactory {
-  public messageReceiver?: MessageReceiver;
-
   private key: string;
 
   constructor(
     private message: string,
     private webSocket: WebSocketClient,
-    private games: Board[],
-    private playerBuffer: Player[],
+    private players: Player[],
+    private onGameStarted: () => void,
   ) {
     this.key = message.split(":")[0];
   }
 
-  getMessageHandler(messageReceiver: MessageReceiver): MessageHandler {
+  getMessageHandler(): MessageHandler {
     switch (this.key) {
       case Action.MOVE:
         return new MoveMessageHandler(this.message, this.webSocket);
@@ -56,9 +46,8 @@ export class MessageHandlerFactory {
         return new HandshakeMessageHandler(
           this.message,
           this.webSocket,
-          this.games,
-          this.playerBuffer,
-          messageReceiver,
+          this.players,
+          this.onGameStarted,
         );
     }
 
@@ -85,6 +74,8 @@ class MoveMessageHandler implements MessageHandler {
         throw new Error(`Cannot move: game hasn't started yet`);
       }
 
+      console.log(board.players);
+
       const content = this.message.split(":")[1];
       const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
         parseInt(value)
@@ -102,7 +93,7 @@ class MoveMessageHandler implements MessageHandler {
 class KillMessageHandler implements MessageHandler {
   constructor(public message: string, public webSocket: WebSocketClient) {}
 
-  handleMessage(board?: Board) {
+  handleMessage(board: Board) {
     try {
       if (!board) {
         throw new Error(`Cannot kill: game hasn't started yet`);
@@ -129,19 +120,25 @@ class HandshakeMessageHandler implements MessageHandler {
   constructor(
     private message: string,
     private webSocket: WebSocketClient,
-    private games: Board[],
-    private playerBuffer: Player[],
-    private messageReceiver: MessageReceiver,
+    private players: Player[],
+    private onGameStarted: () => void,
   ) {}
 
-  handleMessage(_board?: Board) {
+  handleMessage(board?: Board) {
     const [playerId, playerName] = this.message.split(":")[1].split(",");
-    const inGamePlayerAndGame = this.getInGamePlayer(playerId);
-    const isNewPlayer = !inGamePlayerAndGame;
+    const inGamePlayer = board?.players.find((player) =>
+      player.id === playerId
+    );
+    const isNewPlayer = !inGamePlayer;
 
     if (isNewPlayer) {
       console.log("new player detected");
-      const waitingPlayerCount = this.playerBuffer.length;
+
+      if (this.players.length === Ruler.ACTIVE_PLAYER_NUMBER) {
+        return;
+      }
+
+      const waitingPlayerCount = this.players.length;
 
       const player = new ActivePlayer({
         id: playerId,
@@ -151,41 +148,27 @@ class HandshakeMessageHandler implements MessageHandler {
         webSocket: this.webSocket,
       });
 
-      this.playerBuffer.push(player);
+      this.players.push(player);
 
       const shouldStartGame =
         waitingPlayerCount + 1 === Ruler.ACTIVE_PLAYER_NUMBER;
 
       if (shouldStartGame) {
         try {
-          const board = new Board([...this.playerBuffer]);
-          this.games.push(board);
-          this.playerBuffer = [];
-          this.messageReceiver.setBoard(board);
+          this.onGameStarted();
         } catch (error) {
           console.log(error);
         }
       }
     } else {
-      const { player, game } = inGamePlayerAndGame;
       console.log("player already exists! Updtating its socket");
-      player.webSocket = this.webSocket;
+      inGamePlayer.webSocket = this.webSocket;
 
-      const updatePlayers = new PlayersMessageSender(game);
-      const updateBoard = new BoardUpdateMessageSender(game);
-      updateBoard.sendMessage(player);
-      updatePlayers.sendMessage(player);
-    }
-  }
-
-  private getInGamePlayer(
-    playerId: string,
-  ): { player: Player; game: Board } | undefined {
-    for (const game of this.games) {
-      const player = game.players.find((player) => player.id === playerId);
-
-      if (player) {
-        return { player, game };
+      if (board) {
+        const updatePlayers = new PlayersMessageSender(board);
+        const updateBoard = new BoardUpdateMessageSender(board);
+        updateBoard.sendMessage(inGamePlayer);
+        updatePlayers.sendMessage(inGamePlayer);
       }
     }
   }

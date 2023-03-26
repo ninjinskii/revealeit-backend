@@ -9,24 +9,29 @@ import { Ruler } from "./domain/ruler.ts";
 import { MessageHandlerFactory, MessageReceiver } from "./network/message.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
-const playerBuffer: Player[] = [];
-const games: Board[] = [];
+const players: Player[] = [];
+let game: Board | undefined = undefined;
 
 serverWebSocket.on(
   "connection",
   (webSocket: WebSocketClient) => {
     webSocket.on("message", (message: string) => {
-      console.log(message.split(":")[0]);
+      const onGameStarted = () => {
+        const board = new Board();
+        board.init([...players]);
+        game = board;
+        players.length = 0;
+      };
 
       const messageFactory = new MessageHandlerFactory(
         message,
         webSocket,
-        games,
-        playerBuffer
+        players,
+        onGameStarted,
       );
 
       const messageReceiver = new MessageReceiver(messageFactory);
-      messageReceiver.handleMessage();
+      messageReceiver.handleMessage(game);
     });
 
     // webSocket.on("close", () => {
@@ -35,12 +40,12 @@ serverWebSocket.on(
   },
 );
 
-function removePlayerFromBuffer(playerWebSocket: WebSocketClient) {
-  const index = playerBuffer.map((player) => player.webSocket).indexOf(
-    playerWebSocket,
-  );
+// function removePlayerFromBuffer(playerWebSocket: WebSocketClient) {
+//   const index = playerBuffer.map((player) => player.webSocket).indexOf(
+//     playerWebSocket,
+//   );
 
-  if (index > 0) {
-    playerBuffer.splice(index, 1);
-  }
-}
+//   if (index > 0) {
+//     playerBuffer.splice(index, 1);
+//   }
+// }

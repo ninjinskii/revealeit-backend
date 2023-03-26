@@ -11,7 +11,7 @@ export class Turn {
   private playersMessageSender: PlayersMessageSender;
   public waitForKill = false;
 
-  constructor(public board: Board) {
+  constructor(private board: Board) {
     this.turnMessageSender = new TurnMessageSender(board);
     this.playersMessageSender = new PlayersMessageSender(board);
   }
