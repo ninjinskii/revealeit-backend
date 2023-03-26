@@ -14,8 +14,8 @@ export class Board {
   public players: Player[] = [];
   public flattenedSlots: Slot[] = [];
   public turn = new Turn(this);
+  public slots: Slot[][] = [];
 
-  private slots: Slot[][] = [];
   private boardUpdateSender = new BoardUpdateMessageSender(this);
 
   init(players: Player[]) {
@@ -78,6 +78,8 @@ export class Board {
   }
 
   getDistance(x1: number, y1: number, x2: number, y2: number) {
+    console.log("d");
+    console.log(Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   }
 
@@ -98,7 +100,6 @@ export class Board {
     targetX: number,
     targetY: number,
   ): boolean {
-    const bounds = piece.allowedMovements.bounds;
     const location = this.getPieceLocation(piece);
 
     if (!location) {
@@ -106,7 +107,7 @@ export class Board {
     }
 
     const distance = this.getDistance(location.x, location.y, targetX, targetY);
-    return distance >= bounds.min && distance <= bounds.max;
+    return distance > 0 && distance <= piece.actionZone.moveRange;
   }
 
   isMovementInRevealedZone(
@@ -114,14 +115,18 @@ export class Board {
     targetX: number,
     targetY: number,
   ): boolean {
-    const strategy = piece.allowedMovements.slotRevealStrategy;
     const slot = this.getPieceSlot(piece);
 
     if (!slot) {
       return false;
     }
 
-    const revealedZone = strategy.resolve(this.flattenedSlots, slot);
+    const revealedZone = piece.actionZone.resolveReveal(
+      this.flattenedSlots,
+      slot.x,
+      slot.y,
+    );
+
     return revealedZone.filter((slot) =>
       slot.x === targetX && slot.y === targetY
     ).length > 0;
@@ -136,16 +141,39 @@ export class Board {
       );
     }
 
-    return piece.allowedMovements.slotRevealStrategy.resolve(
-      this.flattenedSlots,
-      slot,
-    );
+    return piece.actionZone.resolveReveal(this.flattenedSlots, slot.x, slot.y);
   }
 
-  // TODO: rename AllowedMovement to Zone
+  getRevealedZoneForPlayer(player: ActivePlayer): Slot[] {
+    const zone: Slot[] = [];
+
+    for (const piece of player.pieces) {
+      const slot = this.getPieceSlot(piece);
+
+      if (!slot) {
+        continue;
+      }
+
+      zone.push(
+        ...piece.actionZone.resolveReveal(this.flattenedSlots, slot.x, slot.y),
+      );
+    }
+
+    return zone;
+    // const deduplicates = (array: Slot[]) =>
+    //   array.filter((value, index, self) =>
+    //     index ===
+    //       self.findIndex((slot) => (slot.x === value.x && slot.y === value.y))
+    //   );
+
+    // return deduplicates(zone);
+  }
+
   getKillableSlotsForPlayer(player: ActivePlayer): Slot[] {
+    const revealedZone = this.getRevealedZoneForPlayer(player);
+
     const killers = player.pieces.filter((piece) =>
-      piece.canKill && piece.allowedKills
+      piece.canKill && piece.actionZone.killRange > 0
     );
 
     const presumableVictims = killers.map((killer) => {
@@ -157,9 +185,11 @@ export class Board {
         );
       }
 
-      return killer.allowedKills!.slotRevealStrategy
-        .resolve(this.flattenedSlots, slot)
-        .filter((slot) => slot.piece && slot.piece.playerId !== player.id);
+      return killer.actionZone.resolveKill(this.flattenedSlots, slot.x, slot.y)
+        .filter((slot) =>
+          slot.piece && revealedZone.includes(slot) &&
+          slot.piece.playerId !== player.id
+        );
     }).flat(1);
 
     return presumableVictims;
@@ -229,29 +259,6 @@ export class Board {
     this.slots[targetY][targetX].piece = piece;
     this.turn.registerPlay();
     this.broadcastBoardUpdate();
-  }
-
-  getRevealedZoneForPlayer(player: ActivePlayer): Slot[] {
-    const zone: Slot[] = [];
-
-    for (const piece of player.pieces) {
-      const strategy = piece.allowedMovements.slotRevealStrategy;
-      const slot = this.getPieceSlot(piece);
-
-      if (!slot) {
-        continue;
-      }
-
-      zone.push(...strategy.resolve(this.flattenedSlots, slot));
-    }
-
-    const deduplicates = (array: Slot[]) =>
-      array.filter((value, index, self) =>
-        index ===
-          self.findIndex((slot) => (slot.x === value.x && slot.y === value.y))
-      );
-
-    return deduplicates(zone);
   }
 
   killPieceAt(player: ActivePlayer, x: number, y: number) {

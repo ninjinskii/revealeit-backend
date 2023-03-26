@@ -1,7 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
 import { PieceDTO } from "../domain/piece.ts";
-import { ActivePlayer, Player, SpectatorPlayer } from "../domain/player.ts";
+import { ActivePlayer, Player } from "../domain/player.ts";
 import { Ruler } from "../domain/ruler.ts";
 
 export enum Action {

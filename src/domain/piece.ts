@@ -1,19 +1,23 @@
-import { AllowedMovement, OrthogonalAllowedMovement } from "./movement.ts";
+import { ActionZone, Direction } from "./movement.ts";
 import { Ruler } from "./ruler.ts";
 
 export interface Piece {
   playerId: string;
   name: string;
   imagePath?: string;
-  allowedMovements: AllowedMovement;
-  allowedKills?: AllowedMovement;
+  actionZone: ActionZone;
   canKill: boolean;
   originSpawnDelta: { dX: number; dY: number };
 }
 
 export class Explorer implements Piece {
   name = "explorer";
-  allowedMovements = new OrthogonalAllowedMovement(1, 1);
+  actionZone = new ActionZone({
+    moveRange: 1,
+    revealRange: Ruler.BOARD_SIZE,
+    killRange: 0,
+    direction: Direction.ORTHOGONAL,
+  });
   originSpawnDelta = { dX: 0, dY: 0 };
   canKill = false;
 
@@ -22,8 +26,12 @@ export class Explorer implements Piece {
 
 export class Shooter implements Piece {
   name = "shooter";
-  allowedMovements = new OrthogonalAllowedMovement(1, 2);
-  allowedKills = new OrthogonalAllowedMovement(1, Ruler.BOARD_SIZE);
+  actionZone = new ActionZone({
+    moveRange: 1,
+    revealRange: 1,
+    killRange: Ruler.BOARD_SIZE,
+    direction: Direction.ORTHOGONAL,
+  });
   canKill = true;
   originSpawnDelta = { dX: 1, dY: 1 };
 
