@@ -1,8 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
-import { Game } from "../domain/game.ts";
 import { PieceDTO } from "../domain/piece.ts";
-import { ActivePlayer, Player, SpectatorPlayer } from "../domain/player.ts";
+import { ActivePlayer, Player } from "../domain/player.ts";
 import { Ruler } from "../domain/ruler.ts";
 
 export enum Action {
@@ -17,37 +16,60 @@ export enum Action {
 }
 
 export class MessageReceiver {
-  constructor(public game: Game, public factory: MessageHandlerFactory) {}
+  private board?: Board;
+
+  constructor(private factory: MessageHandlerFactory) {}
+
+  setBoard(board: Board) {
+    this.board = board;
+  }
 
   handleMessage() {
-    const handler = this.factory.getMessageHandler();
-    handler.handleMessage(this.game);
+    // this.factory.messageReceiver = this;
+
+    const handler = this.factory.getMessageHandler(this);
+    handler.handleMessage(this.board);
   }
 }
 
 export class MessageHandlerFactory {
-  key: string;
+  public messageReceiver?: MessageReceiver;
 
-  constructor(public message: string, public webSocket: WebSocketClient) {
+  private key: string;
+
+  constructor(
+    private message: string,
+    private webSocket: WebSocketClient,
+    private games: Board[],
+    private playerBuffer: Player[],
+  ) {
     this.key = message.split(":")[0];
   }
 
-  getMessageHandler(): MessageHandler {
+  getMessageHandler(messageReceiver: MessageReceiver): MessageHandler {
     switch (this.key) {
       case Action.MOVE:
         return new MoveMessageHandler(this.message, this.webSocket);
       case Action.KILL:
         return new KillMessageHandler(this.message, this.webSocket);
       case Action.HANDSHAKE:
-        return new HandshakeMessageHandler(this.message, this.webSocket);
+        return new HandshakeMessageHandler(
+          this.message,
+          this.webSocket,
+          this.games,
+          this.playerBuffer,
+          messageReceiver,
+        );
     }
 
-    throw new Error("Cannot get a message handler: unknown message key");
+    throw new Error(
+      `Cannot get a message handler: unknown message key: ${this.key}`,
+    );
   }
 }
 
 interface MessageHandler {
-  handleMessage(game: Game): void;
+  handleMessage(board?: Board): void;
 }
 
 export interface MessageSender {
@@ -57,21 +79,21 @@ export interface MessageSender {
 class MoveMessageHandler implements MessageHandler {
   constructor(public message: string, public webSocket: WebSocketClient) {}
 
-  handleMessage(game: Game) {
-    if (game.board === null) {
-      console.error("Try to handle message 'move' but board is null");
-      return;
-    }
-
-    const content = this.message.split(":")[1];
-    const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
-      parseInt(value)
-    );
-    const slot = game.board.slots[fromY][fromX];
-
+  handleMessage(board?: Board) {
     try {
-      game.board.movePieceTo(slot.piece, toY, toX);
+      if (!board) {
+        throw new Error(`Cannot move: game hasn't started yet`);
+      }
+
+      const content = this.message.split(":")[1];
+      const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
+        parseInt(value)
+      );
+      const slot = board.getSlot(fromX, fromY);
+
+      board.movePieceTo(slot.piece, toY, toX);
     } catch (error) {
+      console.log(error);
       new ErrorMessageSender(error).sendMessage(this.webSocket);
     }
   }
@@ -80,89 +102,91 @@ class MoveMessageHandler implements MessageHandler {
 class KillMessageHandler implements MessageHandler {
   constructor(public message: string, public webSocket: WebSocketClient) {}
 
-  handleMessage(game: Game) {
-    if (game.board === null) {
-      console.error("Try to handle message 'kill' but board is null");
-      return;
-    }
-
-    const content = this.message.split(":")[1];
-    const [playerId, toX, toY] = content.split(",");
-    const player = game.board.getActivePlayers().find((player) =>
-      player.id === playerId
-    );
-
+  handleMessage(board?: Board) {
     try {
+      if (!board) {
+        throw new Error(`Cannot kill: game hasn't started yet`);
+      }
+
+      const content = this.message.split(":")[1];
+      const [playerId, toX, toY] = content.split(",");
+      const player = board.getActivePlayers().find((player) =>
+        player.id === playerId
+      );
+
       if (!player) {
         throw new Error("Cannot kill piece: killer player not found");
       }
 
-      game.board.killPieceAt(player, parseInt(toX), parseInt(toY));
+      board.killPieceAt(player, parseInt(toX), parseInt(toY));
     } catch (error) {
-      console.error(error);
       new ErrorMessageSender(error).sendMessage(this.webSocket);
     }
   }
 }
 
 class HandshakeMessageHandler implements MessageHandler {
-  constructor(public message: string, public webSocket: WebSocketClient) {}
+  constructor(
+    private message: string,
+    private webSocket: WebSocketClient,
+    private games: Board[],
+    private playerBuffer: Player[],
+    private messageReceiver: MessageReceiver,
+  ) {}
 
-  handleMessage(game: Game) {
+  handleMessage(_board?: Board) {
     const [playerId, playerName] = this.message.split(":")[1].split(",");
-    const player = game.players.find((player) => player.id === playerId);
+    const inGamePlayerAndGame = this.getInGamePlayer(playerId);
+    const isNewPlayer = !inGamePlayerAndGame;
 
-    if (!player) {
+    if (isNewPlayer) {
       console.log("new player detected");
-      const playerCount = game.players.length;
+      const waitingPlayerCount = this.playerBuffer.length;
 
-      if (playerCount >= Ruler.ACTIVE_PLAYER_NUMBER) {
-        this.addSpectatorPlayer(game, playerId, playerName);
-      } else {
-        this.addActivePlayer(game, playerId, playerName);
+      const player = new ActivePlayer({
+        id: playerId,
+        name: playerName,
+        origin: Ruler.PLAYER_ORIGINS[waitingPlayerCount],
+        pieces: Ruler.PLAYER_PIECES_GENERATOR(playerId),
+        webSocket: this.webSocket,
+      });
+
+      this.playerBuffer.push(player);
+
+      const shouldStartGame =
+        waitingPlayerCount + 1 === Ruler.ACTIVE_PLAYER_NUMBER;
+
+      if (shouldStartGame) {
+        try {
+          const board = new Board([...this.playerBuffer]);
+          this.games.push(board);
+          this.playerBuffer = [];
+          this.messageReceiver.setBoard(board);
+        } catch (error) {
+          console.log(error);
+        }
       }
-
-      this.maybeStartGame(game);
     } else {
-      console.log("player already exists ! Updtating its socket");
+      const { player, game } = inGamePlayerAndGame;
+      console.log("player already exists! Updtating its socket");
       player.webSocket = this.webSocket;
 
-      if (game.board) {
-        const updatePlayers = new PlayersMessageSender(game.board);
-        const updateBoard = new BoardUpdateMessageSender(game.board);
-        updateBoard.sendMessage(player);
-        updatePlayers.sendMessage(player);
-      }
+      const updatePlayers = new PlayersMessageSender(game);
+      const updateBoard = new BoardUpdateMessageSender(game);
+      updateBoard.sendMessage(player);
+      updatePlayers.sendMessage(player);
     }
   }
 
-  private addActivePlayer(game: Game, playerId: string, playerName: string) {
-    const playerCount = game.players.length;
+  private getInGamePlayer(
+    playerId: string,
+  ): { player: Player; game: Board } | undefined {
+    for (const game of this.games) {
+      const player = game.players.find((player) => player.id === playerId);
 
-    game.players.push(
-      new ActivePlayer({
-        id: playerId,
-        name: playerName,
-        origin: game.origins[playerCount],
-        pieces: game.pieces(playerId),
-        webSocket: this.webSocket,
-      }),
-    );
-  }
-
-  private addSpectatorPlayer(game: Game, playerId: string, playerName: string) {
-    game.players.push(
-      new SpectatorPlayer(
-        playerId,
-        playerName,
-        this.webSocket,
-      ),
-    );
-  }
-
-  private maybeStartGame(game: Game) {
-    if (game.players.length >= Ruler.ACTIVE_PLAYER_NUMBER) {
-      game.start();
+      if (player) {
+        return { player, game };
+      }
     }
   }
 }
@@ -198,6 +222,8 @@ export class BoardUpdateMessageSender implements MessageSender {
       JSON.stringify(result).replaceAll(":", "@")
     }`;
 
+    console.log("message:");
+    console.log(message);
     player.webSocket.send(message);
   }
 }
@@ -219,7 +245,7 @@ export class TurnMessageSender implements MessageSender {
   constructor(public board: Board) {}
 
   sendMessage(player: Player) {
-    const currentPlayer = this.board.turn.getCurrentPlayer()
+    const currentPlayer = this.board.turn.getCurrentPlayer();
     const message = `${Action.TURN}:${currentPlayer.id}`;
     player.webSocket.send(message);
   }

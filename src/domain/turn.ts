@@ -1,6 +1,5 @@
 import { PlayersMessageSender, TurnMessageSender } from "../network/message.ts";
 import { Board } from "./board.ts";
-import { Game } from "./game.ts";
 import { NoMorePieceLooseCondition } from "./loose-condition.ts";
 import { ActivePlayer } from "./player.ts";
 import { Ruler } from "./ruler.ts";
@@ -12,7 +11,7 @@ export class Turn {
   private playersMessageSender: PlayersMessageSender;
   public waitForKill = false;
 
-  constructor(public game: Game, public board: Board) {
+  constructor(public board: Board) {
     this.turnMessageSender = new TurnMessageSender(board);
     this.playersMessageSender = new PlayersMessageSender(board);
   }

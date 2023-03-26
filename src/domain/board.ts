@@ -1,5 +1,4 @@
 import { BoardUpdateMessageSender } from "../network/message.ts";
-import { Game } from "./game.ts";
 import { Piece } from "./piece.ts";
 import { ActivePlayer, Player } from "./player.ts";
 import { Ruler } from "./ruler.ts";
@@ -18,7 +17,7 @@ export class Board {
   boardUpdateSender: BoardUpdateMessageSender;
   turn: Turn;
 
-  constructor(public players: Player[], public game: Game) {
+  constructor(public players: Player[]) {
     Ruler.ensureCorrectActivePlayerCount(this);
 
     this.generateSlots();
@@ -28,7 +27,7 @@ export class Board {
 
     this.boardUpdateSender = new BoardUpdateMessageSender(this);
     this.broadcastBoardUpdate();
-    this.turn = new Turn(this.game, this);
+    this.turn = new Turn(this);
     this.turn.start();
   }
 
@@ -87,6 +86,10 @@ export class Board {
 
   isSlotInBoard(x: number, y: number): boolean {
     return this.slots[y][x] !== undefined;
+  }
+
+  getSlot(x: number, y: number) {
+    return this.slots[y][x];
   }
 
   isMovementDistanceInBounds(
@@ -316,7 +319,7 @@ export class Board {
     this.turn.checkLooseCondition();
 
     if (this.doWeHaveAWinner()) {
-      this.game.restart()
+      this.endGame();
     }
   }
 
@@ -336,12 +339,13 @@ export class Board {
   }
 
   broadcastBoardUpdate() {
+    console.log("send update to players");
     this.players.forEach((player) =>
       this.boardUpdateSender.sendMessage(player)
     );
   }
 
-  public doWeHaveAWinner(): string | null {
+  private doWeHaveAWinner(): string | null {
     const notLoosers = this.getActivePlayers().filter((player) =>
       !player.hasLost
     );
@@ -351,6 +355,10 @@ export class Board {
     }
 
     return null;
+  }
+
+  private endGame() {
+    this.players = [];
   }
 
   draw() {
