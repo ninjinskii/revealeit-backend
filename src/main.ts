@@ -3,9 +3,7 @@ import {
   WebSocketServer,
 } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 import { Board } from "./domain/board.ts";
-import { Explorer, Shooter } from "./domain/piece.ts";
-import { ActivePlayer, Player } from "./domain/player.ts";
-import { Ruler } from "./domain/ruler.ts";
+import { Player } from "./domain/player.ts";
 import { MessageHandlerFactory, MessageReceiver } from "./network/message.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
@@ -34,18 +32,10 @@ serverWebSocket.on(
       messageReceiver.handleMessage(game);
     });
 
-    // webSocket.on("close", () => {
-    //   removePlayerFromBuffer(webSocket)
-    // });
+    webSocket.on("close", () => {
+      players.forEach(player => player.webSocket.closeForce())
+      players.length = 0;
+      game = undefined;
+    });
   },
 );
-
-// function removePlayerFromBuffer(playerWebSocket: WebSocketClient) {
-//   const index = playerBuffer.map((player) => player.webSocket).indexOf(
-//     playerWebSocket,
-//   );
-
-//   if (index > 0) {
-//     playerBuffer.splice(index, 1);
-//   }
-// }
