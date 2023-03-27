@@ -1,4 +1,7 @@
-import { BoardUpdateMessageSender } from "../network/message.ts";
+import {
+  BoardUpdateMessageSender,
+  PlayersMessageSender,
+} from "../network/message.ts";
 import { Piece } from "./piece.ts";
 import { ActivePlayer, Player } from "./player.ts";
 import { Ruler } from "./ruler.ts";
@@ -17,6 +20,7 @@ export class Board {
   public slots: Slot[][] = [];
 
   private boardUpdateSender = new BoardUpdateMessageSender(this);
+  private playersMessageSender = new PlayersMessageSender(this);
 
   init(players: Player[]) {
     this.players = players;
@@ -29,6 +33,7 @@ export class Board {
     Ruler.ensureCorrectBoardSize(this);
 
     this.broadcastBoardUpdate();
+    this.broadcastPlayersUpdate();
     this.turn.start();
   }
 
@@ -350,6 +355,13 @@ export class Board {
     console.log("send update to players");
     this.players.forEach((player) =>
       this.boardUpdateSender.sendMessage(player)
+    );
+  }
+
+  broadcastPlayersUpdate() {
+    console.log("send update to players");
+    this.players.forEach((player) =>
+      this.playersMessageSender.sendMessage(player)
     );
   }
 
