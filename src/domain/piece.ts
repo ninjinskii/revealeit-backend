@@ -6,7 +6,6 @@ export interface Piece {
   name: string;
   imagePath?: string;
   actionZone: ActionZone;
-  canKill: boolean;
   originSpawnDelta: { dX: number; dY: number };
 }
 
@@ -19,7 +18,6 @@ export class Explorer implements Piece {
     direction: Direction.ORTHOGONAL,
   });
   originSpawnDelta = { dX: 0, dY: 0 };
-  canKill = false;
 
   constructor(public playerId: string) {}
 }
@@ -32,7 +30,6 @@ export class Shooter implements Piece {
     killRange: Ruler.BOARD_SIZE,
     direction: Direction.ORTHOGONAL,
   });
-  canKill = true;
   originSpawnDelta = { dX: 1, dY: 1 };
 
   constructor(public playerId: string) {}
@@ -42,7 +39,7 @@ export class PieceDTO {
   constructor(
     public playerId: string,
     public name: string,
-    public canKill: boolean,
+    public killRange: number,
   ) {}
 
   public static fromPiece(piece: Piece | null): PieceDTO | null {
@@ -50,6 +47,10 @@ export class PieceDTO {
       return null;
     }
 
-    return new PieceDTO(piece.playerId, piece.name, piece.canKill);
+    return new PieceDTO(
+      piece.playerId,
+      piece.name,
+      piece.actionZone.killRange,
+    );
   }
 }

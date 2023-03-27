@@ -173,7 +173,7 @@ export class Board {
     const revealedZone = this.getRevealedZoneForPlayer(player);
 
     const killers = player.pieces.filter((piece) =>
-      piece.canKill && piece.actionZone.killRange > 0
+      piece.actionZone.killRange > 0
     );
 
     const presumableVictims = killers.map((killer) => {
