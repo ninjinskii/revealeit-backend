@@ -159,14 +159,14 @@ export class Board {
       );
     }
 
-    return zone;
-    // const deduplicates = (array: Slot[]) =>
-    //   array.filter((value, index, self) =>
-    //     index ===
-    //       self.findIndex((slot) => (slot.x === value.x && slot.y === value.y))
-    //   );
+    // return zone;
+    const deduplicates = (array: Slot[]) =>
+      array.filter((value, index, self) =>
+        index ===
+          self.findIndex((slot) => (slot.x === value.x && slot.y === value.y))
+      );
 
-    // return deduplicates(zone);
+    return deduplicates(zone);
   }
 
   getKillableSlotsForPlayer(player: ActivePlayer): Slot[] {
