@@ -5,6 +5,7 @@ import {
 } from "../network/message.ts";
 import { Board } from "./board.ts";
 import { NoMorePieceLooseCondition } from "./loose-condition.ts";
+import { Piece } from "./piece.ts";
 import { ActivePlayer } from "./player.ts";
 import { Ruler } from "./ruler.ts";
 
@@ -14,6 +15,7 @@ export class Turn {
   private turnMessageSender: TurnMessageSender;
   private playersMessageSender: PlayersMessageSender;
   private lostMessageSender: LostMessageSender;
+  private lastMovedPiece: Piece | null = null;
   public waitForKill = false;
 
   constructor(private board: Board) {
@@ -72,5 +74,16 @@ export class Turn {
       this.board.broadcastBoardUpdate();
       this.playersMessageSender.sendMessage(player);
     });
+  }
+
+  public isPieceMoveable(piece: Piece) {
+    if (Ruler.CAN_MOVE_PIECE_MULTIPLE_TIMES || this.lastMovedPiece === null) {
+      return true;
+    }
+
+    const last = this.lastMovedPiece;
+    return piece.playerId !== last.playerId &&
+      piece.originSpawnDelta !== last.originSpawnDelta &&
+      piece.name !== last.name
   }
 }

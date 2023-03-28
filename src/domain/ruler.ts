@@ -9,7 +9,7 @@ export class Ruler {
   public static readonly ACTIVE_PLAYER_NUMBER = 2;
   public static readonly MOVE_PER_TURN = 2;
   public static readonly COUNT_KILL_AS_TURN_MOVE = false;
-  public static readonly CAN_MOVE_PIECE_MULTIPLE_TIMES = false; // TODO: implement
+  public static readonly CAN_MOVE_PIECE_MULTIPLE_TIMES = false;
   public static readonly WEB_SOCKET_CLOSE_DEFAULT_NUMBER = 1000;
   public static readonly WEB_SOCKET_CLOSE_END_GAME_NUMBER = 4000;
   public static readonly PLAYER_PIECES_GENERATOR = (playerId: string) => [

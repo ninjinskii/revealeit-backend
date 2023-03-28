@@ -219,6 +219,12 @@ export class Board {
       throw new Error("Cannot move: mover not found");
     }
 
+    if (!this.turn.isPieceMoveable(piece)) {
+      throw new Error(
+        "Cannot move: piece already moved this turn",
+      );
+    }
+
     const player = this.players.find((player) => player.id === piece.playerId);
 
     if (!player) {
