@@ -266,7 +266,7 @@ export class Board {
 
     this.slots[currentY][currentX].piece = null;
     this.slots[targetY][targetX].piece = piece;
-    this.turn.registerPlay();
+    this.turn.registerPlay(piece);
     this.broadcastBoardUpdate();
   }
 
