@@ -83,8 +83,6 @@ export class Board {
   }
 
   getDistance(x1: number, y1: number, x2: number, y2: number) {
-    console.log("d");
-    console.log(Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)));
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
   }
 
@@ -328,8 +326,8 @@ export class Board {
       this.turn.end();
     }
 
-    this.broadcastBoardUpdate();
     this.turn.checkLooseCondition();
+    this.broadcastBoardUpdate();
   }
 
   getActivePlayers(): ActivePlayer[] {

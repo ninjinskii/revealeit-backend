@@ -75,8 +75,6 @@ class MoveMessageHandler implements MessageHandler {
         throw new Error(`Cannot move: game hasn't started yet`);
       }
 
-      console.log(board.players);
-
       const content = this.message.split(":")[1];
       const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
         parseInt(value)
@@ -85,7 +83,6 @@ class MoveMessageHandler implements MessageHandler {
 
       board.movePieceTo(slot.piece, toY, toX);
     } catch (error) {
-      console.log(error);
       new ErrorMessageSender(error).sendMessage(this.webSocket);
     }
   }
@@ -121,25 +118,26 @@ class HandshakeMessageHandler implements MessageHandler {
   constructor(
     private message: string,
     private webSocket: WebSocketClient,
-    private players: Player[],
+    private waitingPlayers: Player[],
     private onGameStarted: () => void,
   ) {}
 
   handleMessage(board?: Board) {
     const [playerId, playerName] = this.message.split(":")[1].split(",");
-    const inGamePlayer = board?.players.find((player) =>
-      player.id === playerId
-    );
+    const inGamePlayer = board
+      ? board.players.find((player) => player.id === playerId)
+      : this.waitingPlayers.find((player) => player.id === playerId);
     const isNewPlayer = !inGamePlayer;
 
     if (isNewPlayer) {
       console.log("new player detected");
+      console.log(playerId);
 
       if (board) {
         return;
       }
 
-      const waitingPlayerCount = this.players.length;
+      const waitingPlayerCount = this.waitingPlayers.length;
 
       const player = new ActivePlayer({
         id: playerId,
@@ -149,7 +147,7 @@ class HandshakeMessageHandler implements MessageHandler {
         webSocket: this.webSocket,
       });
 
-      this.players.push(player);
+      this.waitingPlayers.push(player);
 
       const shouldStartGame =
         waitingPlayerCount + 1 === Ruler.ACTIVE_PLAYER_NUMBER;
@@ -163,6 +161,7 @@ class HandshakeMessageHandler implements MessageHandler {
       }
     } else {
       console.log("player already exists! Updtating its socket");
+      console.log(board?.players.length);
       inGamePlayer.webSocket = this.webSocket;
 
       if (board) {
@@ -208,8 +207,6 @@ export class BoardUpdateMessageSender implements MessageSender {
       JSON.stringify(result).replaceAll(":", "@")
     }`;
 
-    console.log("message:");
-    console.log(message);
     player.webSocket.send(message);
   }
 }

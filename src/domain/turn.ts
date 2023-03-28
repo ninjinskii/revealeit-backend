@@ -68,8 +68,9 @@ export class Turn {
     this.lostMessageSender.sendMessage(looser);
 
     this.board.onPlayerLost(looser);
-    this.board.players.forEach((player) =>
-      this.playersMessageSender.sendMessage(player)
-    );
+    this.board.players.forEach((player) => {
+      this.board.broadcastBoardUpdate();
+      this.playersMessageSender.sendMessage(player);
+    });
   }
 }
