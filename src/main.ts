@@ -14,18 +14,11 @@ serverWebSocket.on(
   "connection",
   (webSocket: WebSocketClient) => {
     webSocket.on("message", (message: string) => {
-      const onGameStarted = () => {
-        const board = new Board();
-        board.init([...players]);
-        game = board;
-        players.length = 0;
-      };
-
       const messageFactory = new MessageHandlerFactory(
         message,
         webSocket,
         players,
-        onGameStarted,
+        startGame,
       );
 
       const messageReceiver = new MessageReceiver(messageFactory);
@@ -33,9 +26,47 @@ serverWebSocket.on(
     });
 
     webSocket.on("close", () => {
-      players.forEach(player => player.webSocket.closeForce())
-      players.length = 0;
-      game = undefined;
+      if (game) {
+        const isAnotherPlayerDisconnected = game.players.filter((player) =>
+          player.webSocket.isClosed && player.webSocket !== webSocket
+        ).length >= 1;
+  
+        if (isAnotherPlayerDisconnected) {
+          console.log("reset")
+          resetGame()
+        }
+
+      }
+      // const isLastPlayer = game?.players.length === 1;
+
+      // if (isLastPlayer) {
+      //   players.forEach((player) => player.webSocket.closeForce());
+      //   players.length = 0;
+      //   game = undefined;
+      // }
+
+      // const isPlayerInGame = players.filter((player) =>
+      //   player.webSocket === webSocket
+      // );
+
+      // if (isPlayerInGame) {
+      //   players.forEach((player) => player.webSocket.closeForce());
+      //   players.length = 0;
+      //   game = undefined;
+      // }
     });
   },
 );
+
+function startGame() {
+  const board = new Board();
+  board.init([...players]);
+  game = board;
+  players.length = 0;
+}
+
+function resetGame() {
+  players.forEach((player) => player.webSocket.closeForce());
+  players.length = 0;
+  game = undefined;
+}

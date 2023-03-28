@@ -134,7 +134,7 @@ class HandshakeMessageHandler implements MessageHandler {
     if (isNewPlayer) {
       console.log("new player detected");
 
-      if (this.players.length === Ruler.ACTIVE_PLAYER_NUMBER) {
+      if (board) {
         return;
       }
 
@@ -167,8 +167,10 @@ class HandshakeMessageHandler implements MessageHandler {
       if (board) {
         const updatePlayers = new PlayersMessageSender(board);
         const updateBoard = new BoardUpdateMessageSender(board);
+        const updateTurn = new TurnMessageSender(board);
         updateBoard.sendMessage(inGamePlayer);
         updatePlayers.sendMessage(inGamePlayer);
+        updateTurn.sendMessage(inGamePlayer);
       }
     }
   }

@@ -27,10 +27,10 @@ export class Shooter implements Piece {
   actionZone = new ActionZone({
     moveRange: 1,
     revealRange: 1,
-    killRange: 3,
+    killRange: 1,
     direction: Direction.ORTHOGONAL,
   });
-  originSpawnDelta = { dX: 1, dY: 1 };
+  originSpawnDelta = { dX: 0, dY: 1 };
 
   constructor(public playerId: string) {}
 }
