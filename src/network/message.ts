@@ -12,6 +12,7 @@ export enum Action {
   ERROR = "error",
   HANDSHAKE = "handshake",
   TURN = "turn",
+  LOST = "lost",
   LOG = "log",
 }
 
@@ -232,6 +233,15 @@ export class TurnMessageSender implements MessageSender {
   sendMessage(player: Player) {
     const currentPlayer = this.board.turn.getCurrentPlayer();
     const message = `${Action.TURN}:${currentPlayer.id}`;
+    player.webSocket.send(message);
+  }
+}
+
+export class LostMessageSender implements MessageSender {
+  constructor(public board: Board) {}
+
+  sendMessage(player: Player) {
+    const message = `${Action.LOST}`;
     player.webSocket.send(message);
   }
 }

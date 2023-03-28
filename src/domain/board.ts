@@ -330,10 +330,6 @@ export class Board {
 
     this.broadcastBoardUpdate();
     this.turn.checkLooseCondition();
-
-    if (this.doWeHaveAWinner()) {
-      this.endGame();
-    }
   }
 
   getActivePlayers(): ActivePlayer[] {
@@ -363,22 +359,6 @@ export class Board {
     this.players.forEach((player) =>
       this.playersMessageSender.sendMessage(player)
     );
-  }
-
-  private doWeHaveAWinner(): string | null {
-    const notLoosers = this.getActivePlayers().filter((player) =>
-      !player.hasLost
-    );
-
-    if (notLoosers.length === 1) {
-      return notLoosers[0].name;
-    }
-
-    return null;
-  }
-
-  private endGame() {
-    this.players = [];
   }
 
   draw() {
