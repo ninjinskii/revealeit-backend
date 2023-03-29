@@ -2,7 +2,7 @@ import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
 import { PieceDTO } from "../domain/piece.ts";
 import { ActivePlayer, Player } from "../domain/player.ts";
-import { Ruler } from "../domain/ruler.ts";
+import { Rules } from "../domain/rules.ts";
 
 export enum Action {
   MOVE = "move",
@@ -142,15 +142,15 @@ class HandshakeMessageHandler implements MessageHandler {
       const player = new ActivePlayer({
         id: playerId,
         name: playerName,
-        origin: Ruler.PLAYER_ORIGINS[waitingPlayerCount],
-        pieces: Ruler.PLAYER_PIECES_GENERATOR(playerId),
+        origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
+        pieces: Rules.PLAYER_PIECES_GENERATOR(playerId),
         webSocket: this.webSocket,
       });
 
       this.waitingPlayers.push(player);
 
       const shouldStartGame =
-        waitingPlayerCount + 1 === Ruler.ACTIVE_PLAYER_NUMBER;
+        waitingPlayerCount + 1 === Rules.ACTIVE_PLAYER_NUMBER;
 
       if (shouldStartGame) {
         try {

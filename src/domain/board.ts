@@ -4,7 +4,7 @@ import {
 } from "../network/message.ts";
 import { Piece } from "./piece.ts";
 import { ActivePlayer, Player } from "./player.ts";
-import { Ruler } from "./ruler.ts";
+import { Rules } from "./rules.ts";
 import { Turn } from "./turn.ts";
 
 export interface Slot {
@@ -25,12 +25,12 @@ export class Board {
   init(players: Player[]) {
     this.players = players;
 
-    Ruler.ensureCorrectActivePlayerCount(this);
+    Rules.ensureCorrectActivePlayerCount(this);
 
     this.generateSlots();
     this.initPlayersPieces();
 
-    Ruler.ensureCorrectBoardSize(this);
+    Rules.ensureCorrectBoardSize(this);
 
     this.broadcastBoardUpdate();
     this.broadcastPlayersUpdate();
@@ -38,9 +38,9 @@ export class Board {
   }
 
   generateSlots() {
-    for (let i = 0; i < Ruler.BOARD_SIZE; i++) {
+    for (let i = 0; i < Rules.BOARD_SIZE; i++) {
       let j = 0;
-      const array = [...new Array(Ruler.BOARD_SIZE)].map(() => ({
+      const array = [...new Array(Rules.BOARD_SIZE)].map(() => ({
         x: j++,
         y: i,
         piece: null,
@@ -323,7 +323,7 @@ export class Board {
     );
     victimSlot.piece = null;
 
-    if (Ruler.COUNT_KILL_AS_TURN_MOVE) {
+    if (Rules.COUNT_KILL_AS_TURN_MOVE) {
       this.turn.registerPlay();
     }
 

@@ -3,15 +3,12 @@ import { Explorer, Shooter } from "./piece.ts";
 import { PlayerOrigin } from "./player.ts";
 
 /* Sets of methods that set boundaries on the game. Can be modified to create variants, new pieces etc... */
-export class Ruler {
+export class Rules {
   public static readonly BOARD_SIZE = 5;
-  public static readonly MIN_BOARD_SIZE = 2;
   public static readonly ACTIVE_PLAYER_NUMBER = 2;
   public static readonly MOVE_PER_TURN = 2;
   public static readonly COUNT_KILL_AS_TURN_MOVE = false;
   public static readonly CAN_MOVE_PIECE_MULTIPLE_TIMES = false;
-  public static readonly WEB_SOCKET_CLOSE_DEFAULT_NUMBER = 1000;
-  public static readonly WEB_SOCKET_CLOSE_END_GAME_NUMBER = 4000;
   public static readonly PLAYER_PIECES_GENERATOR = (playerId: string) => [
     new Explorer(playerId),
     new Shooter(playerId),
@@ -20,29 +17,27 @@ export class Ruler {
   public static readonly PLAYER_ORIGINS: PlayerOrigin[] = [
     { x: 0, y: 0, xModifier: 1, yModifier: 1 },
     {
-      x: Ruler.BOARD_SIZE - 1,
-      y: Ruler.BOARD_SIZE - 1,
+      x: Rules.BOARD_SIZE - 1,
+      y: Rules.BOARD_SIZE - 1,
       xModifier: -1,
       yModifier: -1,
     },
-    { x: 0, y: Ruler.BOARD_SIZE - 1, xModifier: 1, yModifier: -1 },
-    { x: Ruler.BOARD_SIZE - 1, y: 0, xModifier: -1, yModifier: 1 },
+    { x: 0, y: Rules.BOARD_SIZE - 1, xModifier: 1, yModifier: -1 },
+    { x: Rules.BOARD_SIZE - 1, y: 0, xModifier: -1, yModifier: 1 },
   ];
 
   static ensureCorrectBoardSize(board: Board) {
-    if (Ruler.BOARD_SIZE <= Ruler.MIN_BOARD_SIZE) {
-      throw new Error(
-        `Cannot set BOARD_SIZE under ${Ruler.MIN_BOARD_SIZE} (from rule MIN_BOARD_SIZE)`,
-      );
-    }
+    const slotCount = board.slots.flat(1).length
 
-    board.slots.flat(1).length === Ruler.BOARD_SIZE * Ruler.BOARD_SIZE;
+    if (slotCount !== Rules.BOARD_SIZE * Rules.BOARD_SIZE) {
+      throw new Error(`Rules enforcer fail: BOARD_SIZE is ${Rules.BOARD_SIZE} but we have ${slotCount} slots.`)
+    }
   }
 
   static ensureCorrectActivePlayerCount(board: Board) {
-    if (board.players.length < Ruler.ACTIVE_PLAYER_NUMBER) {
+    if (board.players.length < Rules.ACTIVE_PLAYER_NUMBER) {
       throw new Error(
-        `Cannot instantiate board without ${Ruler.ACTIVE_PLAYER_NUMBER} (from rule ACTIVE_PLAYER_NUMBER) players`,
+        `Cannot instantiate board without ${Rules.ACTIVE_PLAYER_NUMBER} (from rule ACTIVE_PLAYER_NUMBER) players`,
       );
     }
   }

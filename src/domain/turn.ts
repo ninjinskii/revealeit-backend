@@ -7,7 +7,7 @@ import { Board } from "./board.ts";
 import { NoMorePieceLooseCondition } from "./loose-condition.ts";
 import { Piece } from "./piece.ts";
 import { ActivePlayer } from "./player.ts";
-import { Ruler } from "./ruler.ts";
+import { Rules } from "./rules.ts";
 
 export class Turn {
   private currentPlayerPosition = 0;
@@ -39,7 +39,7 @@ export class Turn {
     this.moveCount = 0;
     // TODO: this is wring when a player has lost and player count > 2
     this.currentPlayerPosition = ++this.currentPlayerPosition %
-      Ruler.ACTIVE_PLAYER_NUMBER;
+      Rules.ACTIVE_PLAYER_NUMBER;
 
     this.checkLooseCondition();
     this.start();
@@ -81,9 +81,7 @@ export class Turn {
   }
 
   public isPieceMoveable(piece: Piece) {
-    // console.log(piece)
-    // console.log(this.lastMovedPiece)
-    if (Ruler.CAN_MOVE_PIECE_MULTIPLE_TIMES || this.lastMovedPiece === null) {
+    if (Rules.CAN_MOVE_PIECE_MULTIPLE_TIMES || this.lastMovedPiece === null) {
       return true;
     }
 
