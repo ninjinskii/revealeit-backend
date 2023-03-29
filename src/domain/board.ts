@@ -3,7 +3,7 @@ import {
   PlayersMessageSender,
 } from "../network/message.ts";
 import { Piece } from "./piece.ts";
-import { ActivePlayer, Player } from "./player.ts";
+import { Player } from "./Player.ts";
 import { Rules } from "./rules.ts";
 import { Turn } from "./turn.ts";
 
@@ -25,7 +25,7 @@ export class Board {
   init(players: Player[]) {
     this.players = players;
 
-    Rules.ensureCorrectActivePlayerCount(this);
+    Rules.ensureCorrectPlayerCount(this);
 
     this.generateSlots();
     this.initPlayersPieces();
@@ -52,7 +52,7 @@ export class Board {
   }
 
   initPlayersPieces() {
-    for (const player of this.getActivePlayers()) {
+    for (const player of this.players) {
       for (const piece of player.pieces) {
         const { x, y, xModifier, yModifier } = player.origin;
         const { dX, dY } = piece.originSpawnDelta;
@@ -79,7 +79,7 @@ export class Board {
   }
 
   getAllPieces(): Piece[] {
-    return this.getActivePlayers().map((player) => player.pieces).flat(1);
+    return this.players.map((player) => player.pieces).flat(1);
   }
 
   getDistance(x1: number, y1: number, x2: number, y2: number) {
@@ -147,7 +147,7 @@ export class Board {
     return piece.actionZone.resolveReveal(this.flattenedSlots, slot.x, slot.y);
   }
 
-  getRevealedZoneForPlayer(player: ActivePlayer): Slot[] {
+  getRevealedZoneForPlayer(player: Player): Slot[] {
     const zone: Slot[] = [];
 
     for (const piece of player.pieces) {
@@ -172,7 +172,7 @@ export class Board {
     return deduplicates(zone);
   }
 
-  getKillableSlotsForPlayer(player: ActivePlayer): Slot[] {
+  getKillableSlotsForPlayer(player: Player): Slot[] {
     const revealedZone = this.getRevealedZoneForPlayer(player);
 
     const killers = player.pieces.filter((piece) =>
@@ -270,7 +270,7 @@ export class Board {
     this.broadcastBoardUpdate();
   }
 
-  killPieceAt(player: ActivePlayer, x: number, y: number) {
+  killPieceAt(player: Player, x: number, y: number) {
     if (!this.isPlayerTurn(player)) {
       throw new Error("Cannot move: wait for player turn");
     }
@@ -310,7 +310,7 @@ export class Board {
       throw new Error("Cannot kill: trying to kill own piece");
     }
 
-    const victimPlayer = this.getActivePlayers().find((player) =>
+    const victimPlayer = this.players.find((player) =>
       player.id === victim.playerId
     );
 
@@ -336,17 +336,11 @@ export class Board {
     this.broadcastBoardUpdate();
   }
 
-  getActivePlayers(): ActivePlayer[] {
-    return this.players.filter((player) =>
-      player instanceof ActivePlayer
-    ) as ActivePlayer[];
-  }
-
   isPlayerTurn(player: Player): boolean {
     return this.turn.getCurrentPlayer().id === player.id;
   }
 
-  onPlayerLost(player: ActivePlayer) {
+  onPlayerLost(player: Player) {
     player.hasLost = true;
     player.pieces = [];
   }
@@ -363,25 +357,5 @@ export class Board {
     this.players.forEach((player) =>
       this.playersMessageSender.sendMessage(player)
     );
-  }
-
-  draw() {
-    console.log("________________________________________");
-    for (const row of this.slots) {
-      console.log(row.map((slot) => {
-        if (!slot.piece) {
-          return "_";
-        }
-
-        if (slot.piece.playerId === "1") {
-          return "1";
-        }
-
-        if (slot.piece.playerId === "2") {
-          return "2";
-        }
-      }));
-    }
-    console.log("________________________________________");
   }
 }

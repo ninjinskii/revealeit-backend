@@ -1,6 +1,6 @@
 import { Board } from "./board.ts";
 import { Explorer, Shooter } from "./piece.ts";
-import { PlayerOrigin } from "./player.ts";
+import { PlayerOrigin } from "./Player.ts";
 
 /* Sets of methods that set boundaries on the game. Can be modified to create variants, new pieces etc... */
 export class Rules {
@@ -34,7 +34,7 @@ export class Rules {
     }
   }
 
-  static ensureCorrectActivePlayerCount(board: Board) {
+  static ensureCorrectPlayerCount(board: Board) {
     if (board.players.length < Rules.ACTIVE_PLAYER_NUMBER) {
       throw new Error(
         `Cannot instantiate board without ${Rules.ACTIVE_PLAYER_NUMBER} (from rule ACTIVE_PLAYER_NUMBER) players`,

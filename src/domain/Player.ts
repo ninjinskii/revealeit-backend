@@ -1,13 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Piece } from "./piece.ts";
 
-export interface Player {
-  id: string;
-  name: string;
-  webSocket: WebSocketClient;
-}
-
-export interface ActivePlayerOptions {
+export interface PlayerOptions {
   id: string;
   name: string;
   pieces: Piece[];
@@ -15,7 +9,15 @@ export interface ActivePlayerOptions {
   webSocket: WebSocketClient;
 }
 
-export class ActivePlayer implements Player {
+export interface PlayerOrigin {
+  x: number;
+  y: number;
+  xModifier: 1 | -1;
+  yModifier: 1 | -1;
+}
+
+
+export class Player {
   public id: string;
   public name: string;
   public pieces: Piece[];
@@ -23,7 +25,7 @@ export class ActivePlayer implements Player {
   public hasLost = false;
   public webSocket: WebSocketClient;
 
-  constructor(options: ActivePlayerOptions) {
+  constructor(options: PlayerOptions) {
     const { id, name, pieces, origin, webSocket } = options;
 
     this.id = id;
@@ -32,19 +34,4 @@ export class ActivePlayer implements Player {
     this.origin = origin;
     this.webSocket = webSocket;
   }
-}
-
-export class SpectatorPlayer implements Player {
-  constructor(
-    public id: string,
-    public name: string,
-    public webSocket: WebSocketClient,
-  ) {}
-}
-
-export interface PlayerOrigin {
-  x: number;
-  y: number;
-  xModifier: 1 | -1;
-  yModifier: 1 | -1;
 }

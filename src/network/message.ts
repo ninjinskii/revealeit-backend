@@ -1,7 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/board.ts";
 import { PieceDTO } from "../domain/piece.ts";
-import { ActivePlayer, Player } from "../domain/player.ts";
+import { Player } from "../domain/Player.ts";
 import { Rules } from "../domain/rules.ts";
 
 export enum Action {
@@ -99,9 +99,7 @@ class KillMessageHandler implements MessageHandler {
 
       const content = this.message.split(":")[1];
       const [playerId, toX, toY] = content.split(",");
-      const player = board.getActivePlayers().find((player) =>
-        player.id === playerId
-      );
+      const player = board.players.find((player) => player.id === playerId);
 
       if (!player) {
         throw new Error("Cannot kill piece: killer player not found");
@@ -139,7 +137,7 @@ class HandshakeMessageHandler implements MessageHandler {
 
       const waitingPlayerCount = this.waitingPlayers.length;
 
-      const player = new ActivePlayer({
+      const player = new Player({
         id: playerId,
         name: playerName,
         origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
@@ -180,9 +178,7 @@ export class BoardUpdateMessageSender implements MessageSender {
   constructor(public board: Board) {}
 
   sendMessage(player: Player) {
-    const revealedZone = player instanceof ActivePlayer
-      ? this.board.getRevealedZoneForPlayer(player)
-      : this.board.flattenedSlots;
+    const revealedZone = this.board.getRevealedZoneForPlayer(player)
 
     const compressedRevealedZone = revealedZone.map((slot) => ({
       x: slot.x,
@@ -191,17 +187,14 @@ export class BoardUpdateMessageSender implements MessageSender {
     }));
 
     const result = { revealed: compressedRevealedZone, killable: [] };
-
-    if (player instanceof ActivePlayer) {
-      const playerKills = this.board.getKillableSlotsForPlayer(player).map(
-        (slot) => ({
-          x: slot.x,
-          y: slot.y,
-          piece: PieceDTO.fromPiece(slot.piece),
-        }),
-      );
-      result.killable = playerKills as never[];
-    }
+    const playerKills = this.board.getKillableSlotsForPlayer(player).map(
+      (slot) => ({
+        x: slot.x,
+        y: slot.y,
+        piece: PieceDTO.fromPiece(slot.piece),
+      }),
+    );
+    result.killable = playerKills as never[];
 
     const message = `${Action.BOARD}:${
       JSON.stringify(result).replaceAll(":", "@")
@@ -215,7 +208,7 @@ export class PlayersMessageSender implements MessageSender {
   constructor(public board: Board) {}
 
   sendMessage(player: Player) {
-    const notLoosers = this.board.getActivePlayers().filter((player) =>
+    const notLoosers = this.board.players.filter((player) =>
       player.hasLost === false
     ).map((player) => `${player.id},${player.name}`);
 

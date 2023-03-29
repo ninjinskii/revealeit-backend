@@ -6,7 +6,7 @@ import {
 import { Board } from "./board.ts";
 import { NoMorePieceLooseCondition } from "./loose-condition.ts";
 import { Piece } from "./piece.ts";
-import { ActivePlayer } from "./player.ts";
+import { Player } from "./Player.ts";
 import { Rules } from "./rules.ts";
 
 export class Turn {
@@ -24,8 +24,8 @@ export class Turn {
     this.lostMessageSender = new LostMessageSender(board);
   }
 
-  public getCurrentPlayer(): ActivePlayer {
-    return this.board.getActivePlayers()[this.currentPlayerPosition];
+  public getCurrentPlayer(): Player {
+    return this.board.players[this.currentPlayerPosition];
   }
 
   public start() {
@@ -62,7 +62,7 @@ export class Turn {
 
   public checkLooseCondition() {
     const looseCondition = new NoMorePieceLooseCondition();
-    const looser = this.board.getActivePlayers().find((player) =>
+    const looser = this.board.players.find((player) =>
       looseCondition.hasLost(this.board, player)
     );
 

@@ -4,7 +4,7 @@ import {
 } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 import { Board } from "./domain/board.ts";
 import { Constants } from "./domain/Constants.ts";
-import { Player } from "./domain/player.ts";
+import { Player } from "./domain/Player.ts";
 import { MessageHandlerFactory, MessageReceiver } from "./network/message.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
