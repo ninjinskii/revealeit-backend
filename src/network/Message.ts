@@ -2,9 +2,9 @@ import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/Board.ts";
 import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
-import { Rules } from "../domain/rules.ts";
+import { Rules } from "../domain/Rules.ts";
 
-export enum Action {
+export enum MessageType {
   MOVE = "move",
   KILL = "kill",
   BOARD = "board",
@@ -13,7 +13,6 @@ export enum Action {
   HANDSHAKE = "handshake",
   TURN = "turn",
   LOST = "lost",
-  LOG = "log",
 }
 
 export class MessageReceiver {
@@ -25,7 +24,7 @@ export class MessageReceiver {
   }
 }
 
-export class MessageHandlerFactory {m
+export class MessageHandlerFactory {
   private key: string;
 
   constructor(
@@ -39,11 +38,11 @@ export class MessageHandlerFactory {m
 
   getMessageHandler(): MessageHandler {
     switch (this.key) {
-      case Action.MOVE:
+      case MessageType.MOVE:
         return new MoveMessageHandler(this.message, this.webSocket);
-      case Action.KILL:
+      case MessageType.KILL:
         return new KillMessageHandler(this.message, this.webSocket);
-      case Action.HANDSHAKE:
+      case MessageType.HANDSHAKE:
         return new HandshakeMessageHandler(
           this.message,
           this.webSocket,
@@ -190,7 +189,7 @@ export class BoardUpdateMessageSender implements MessageSender {
     );
     result.killable = playerKills as never[];
 
-    const message = `${Action.BOARD}:${
+    const message = `${MessageType.BOARD}:${
       JSON.stringify(result).replaceAll(":", "@")
     }`;
 
@@ -206,7 +205,7 @@ export class PlayersMessageSender implements MessageSender {
       player.hasLost === false
     ).map((player) => `${player.id},${player.name}`);
 
-    const message = `${Action.PLAYERS}:${notLoosers.join("|")}`;
+    const message = `${MessageType.PLAYERS}:${notLoosers.join("|")}`;
     player.webSocket.send(message);
   }
 }
@@ -216,7 +215,7 @@ export class TurnMessageSender implements MessageSender {
 
   sendMessage(player: Player) {
     const currentPlayer = this.board.turn.getCurrentPlayer();
-    const message = `${Action.TURN}:${currentPlayer.id}`;
+    const message = `${MessageType.TURN}:${currentPlayer.id}`;
     player.webSocket.send(message);
   }
 }
@@ -225,7 +224,7 @@ export class LostMessageSender implements MessageSender {
   constructor(public board: Board) {}
 
   sendMessage(player: Player) {
-    const message = `${Action.LOST}`;
+    const message = `${MessageType.LOST}`;
     player.webSocket.send(message);
   }
 }
@@ -234,16 +233,7 @@ class ErrorMessageSender implements MessageSender {
   constructor(public error: Error) {}
 
   sendMessage(webSocket: WebSocketClient) {
-    const message = `${Action.ERROR}:${this.error.message}`;
-    webSocket.send(message);
-  }
-}
-
-class LogMessageSender implements MessageSender {
-  constructor(public log: string) {}
-
-  sendMessage(webSocket: WebSocketClient) {
-    const message = `${Action.LOG}:${this.log}`;
+    const message = `${MessageType.ERROR}:${this.error.message}`;
     webSocket.send(message);
   }
 }
