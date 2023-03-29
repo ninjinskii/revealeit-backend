@@ -346,14 +346,12 @@ export class Board {
   }
 
   broadcastBoardUpdate() {
-    console.log("send update to players");
     this.players.forEach((player) =>
       this.boardUpdateSender.sendMessage(player)
     );
   }
 
   broadcastPlayersUpdate() {
-    console.log("send update to players");
     this.players.forEach((player) =>
       this.playersMessageSender.sendMessage(player)
     );

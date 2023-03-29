@@ -128,9 +128,6 @@ class HandshakeMessageHandler implements MessageHandler {
     const isNewPlayer = !inGamePlayer;
 
     if (isNewPlayer) {
-      console.log("new player detected");
-      console.log(playerId);
-
       if (board) {
         return;
       }
@@ -154,12 +151,9 @@ class HandshakeMessageHandler implements MessageHandler {
         try {
           this.onGameStarted();
         } catch (error) {
-          console.log(error);
         }
       }
     } else {
-      console.log("player already exists! Updtating its socket");
-      console.log(board?.players.length);
       inGamePlayer.webSocket = this.webSocket;
 
       if (board) {
