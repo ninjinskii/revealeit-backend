@@ -1,0 +1,39 @@
+name: Build & deploy to Deno deploy
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1.1.1
+        with:
+          deno-version: v1.x
+
+      - name: Tests
+        run: deno test
+
+  deploy:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: revealeit-backend # the name of the project on Deno Deploy
+          entrypoint: main.ts
