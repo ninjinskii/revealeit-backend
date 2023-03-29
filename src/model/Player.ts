@@ -1,5 +1,5 @@
 import { WebSocketClient } from "../../deps.ts";
-import { Piece } from "./piece.ts";
+import { Piece } from "./Piece.ts";
 
 export interface PlayerOptions {
   id: string;

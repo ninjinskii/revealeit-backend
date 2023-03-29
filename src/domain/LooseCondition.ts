@@ -1,5 +1,5 @@
-import { Board } from "./board.ts";
-import { Player } from "./Player.ts";
+import { Board } from "./Board.ts";
+import { Player } from "../model/Player.ts";
 
 interface LooseCondition {
   hasLost(board: Board, currentPlayer: Player): boolean;

@@ -1,5 +1,5 @@
-import { ActionZone, Direction } from "./movement.ts";
-import { Rules } from "./rules.ts";
+import { ActionZone, Direction } from "../domain/ActionZone.ts";
+import { Rules } from "../domain/Rules.ts";
 
 export interface Piece {
   playerId: string;

@@ -1,7 +1,7 @@
 import { WebSocketClient } from "../../deps.ts";
-import { Board } from "../domain/board.ts";
-import { PieceDTO } from "../domain/piece.ts";
-import { Player } from "../domain/Player.ts";
+import { Board } from "../domain/Board.ts";
+import { PieceDTO } from "../model/Piece.ts";
+import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/rules.ts";
 
 export enum Action {
@@ -25,7 +25,7 @@ export class MessageReceiver {
   }
 }
 
-export class MessageHandlerFactory {
+export class MessageHandlerFactory {m
   private key: string;
 
   constructor(

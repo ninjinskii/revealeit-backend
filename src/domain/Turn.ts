@@ -2,12 +2,12 @@ import {
   LostMessageSender,
   PlayersMessageSender,
   TurnMessageSender,
-} from "../network/message.ts";
-import { Board } from "./board.ts";
-import { NoMorePieceLooseCondition } from "./loose-condition.ts";
-import { Piece } from "./piece.ts";
-import { Player } from "./Player.ts";
-import { Rules } from "./rules.ts";
+} from "../network/Message.ts";
+import { Board } from "./Board.ts";
+import { NoMorePieceLooseCondition } from "./LooseCondition.ts";
+import { Piece } from "../domain/Piece.ts";
+import { Player } from "../domain/Player.ts";
+import { Rules } from "../domain/Rules.ts";
 
 export class Turn {
   private currentPlayerPosition = 0;

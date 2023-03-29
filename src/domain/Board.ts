@@ -1,11 +1,11 @@
 import {
   BoardUpdateMessageSender,
   PlayersMessageSender,
-} from "../network/message.ts";
-import { Piece } from "./piece.ts";
-import { Player } from "./Player.ts";
-import { Rules } from "./rules.ts";
-import { Turn } from "./turn.ts";
+} from "../network/Message.ts";
+import { Piece } from "../model/Piece.ts";
+import { Player } from "../model/Player.ts";
+import { Rules } from "./Rules.ts";
+import { Turn } from "./Turn.ts";
 
 export interface Slot {
   x: number;
