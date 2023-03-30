@@ -3,7 +3,7 @@ import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
 import { Messenger } from "./Messenger.ts";
-import { LogAndPushErrorRegistor } from "../util/BoardErrorHandler";
+import { LogAndPushErrorRegistor } from "../util/BoardErrorHandler.ts";
 
 export enum MessageType {
   MOVE = "move",
@@ -71,11 +71,7 @@ export class HandshakeMessage extends ReceiveableMessage {
               waitingPlayerCount + 1 === Rules.ACTIVE_PLAYER_NUMBER;
 
           if (shouldStartGame) {
-              try {
-                  this.onGameStarted();
-              } catch (error) {
-                const errorRegistor = new LogAndPushErrorRegistor()
-              }
+            this.onGameStarted();
           }
       } else {
           inGamePlayer.messenger = this.messenger;
@@ -94,51 +90,42 @@ export class HandshakeMessage extends ReceiveableMessage {
 }
 
 export class MoveMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string, private messenger: Messenger) {
+  constructor(key: string, protected content: string) {
       super(key, content)
   }
 
   execute(board: Board) {
-    try {
-      if (!board) {
-        throw new Error(`Cannot move: game hasn't started yet`);
-      }
-
-      const [fromX, fromY, toY, toX] = this.content.split(",").map((value) =>
-        parseInt(value)
-      );
-      const slot = board.getSlot(fromX, fromY);
-
-      board.movePieceTo(slot.piece, toY, toX);
-    } catch (error) {
-      const errorMessage = new ErrorMessage(error)
-      this.messenger.sendMessage(errorMessage)
+    if (!board) {
+      throw new Error(`Cannot move: game hasn't started yet`);
     }
+
+    const [fromX, fromY, toY, toX] = this.content.split(",").map((value) =>
+      parseInt(value)
+    );
+    const slot = board.getSlot(fromX, fromY);
+
+    board.movePieceTo(slot.piece, toY, toX);
   }
 }
 
 export class KillMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string, private messenger: Messenger) {
-      super(key, content)
+  constructor(key: string, protected content: string) {
+    super(key, content)
   }
 
   execute(board: Board) {
-    try {
-      if (!board) {
-        throw new Error(`Cannot kill: game hasn't started yet`);
-      }
-
-      const [playerId, toX, toY] = this.content.split(",");
-      const player = board.players.find((player) => player.id === playerId);
-
-      if (!player) {
-        throw new Error("Cannot kill piece: killer player not found");
-      }
-
-      board.killPieceAt(player, parseInt(toX), parseInt(toY));
-    } catch (error) {
-      // use messenger to send error
+    if (!board) {
+      throw new Error(`Cannot kill: game hasn't started yet`);
     }
+
+    const [playerId, toX, toY] = this.content.split(",");
+    const player = board.players.find((player) => player.id === playerId);
+
+    if (!player) {
+      throw new Error("Cannot kill piece: killer player not found");
+    }
+
+    board.killPieceAt(player, parseInt(toX), parseInt(toY));
   }
 }
 
