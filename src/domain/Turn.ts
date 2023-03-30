@@ -39,7 +39,7 @@ export class Turn {
     this.moveCount = 0;
     // TODO: this is wring when a player has lost and player count > 2
     this.currentPlayerPosition = ++this.currentPlayerPosition %
-      Rules.ACTIVE_PLAYER_NUMBER;
+      Rules.PLAYER_NUMBER;
 
     this.checkLooseCondition();
     this.start();

@@ -2,7 +2,7 @@ import { Board } from "../domain/Board.ts";
 import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
-import { Messenger } from "./Messenger";
+import { Messenger } from "./Messenger.ts";
 
 export enum MessageType {
   MOVE = "move",
@@ -109,7 +109,8 @@ export class MoveMessage extends ReceiveableMessage {
 
       board.movePieceTo(slot.piece, toY, toX);
     } catch (error) {
-      // use messenger to send error
+      const errorMessage = new ErrorMessage(error)
+      this.messenger.sendMessage(errorMessage)
     }
   }
 }

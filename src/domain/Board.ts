@@ -211,7 +211,7 @@ export class Board {
   movePieceTo(piece: Piece | null, targetX: number, targetY: number) {
     if (this.turn.waitForKill) {
       throw new Error(
-        "Cannot move: max play coutn reached, waiting for a kill",
+        "Cannot move: max play count reached, waiting for a kill", // "Un pion est à votre portée, éliminez-le pour achever le tour.
       );
     }
 
