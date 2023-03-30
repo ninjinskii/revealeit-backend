@@ -1,4 +1,4 @@
-import { WebSocketClient } from "../../deps.ts";
+import { Messenger } from "../network/Messenger.ts";
 import { Piece } from "./Piece.ts";
 
 export interface PlayerOptions {
@@ -6,7 +6,7 @@ export interface PlayerOptions {
   name: string;
   pieces: Piece[];
   origin: PlayerOrigin;
-  webSocket: WebSocketClient;
+  messenger: Messenger;
 }
 
 export interface PlayerOrigin {
@@ -23,15 +23,15 @@ export class Player {
   public pieces: Piece[];
   public origin: PlayerOrigin;
   public hasLost = false;
-  public webSocket: WebSocketClient;
+  public messenger: Messenger;
 
   constructor(options: PlayerOptions) {
-    const { id, name, pieces, origin, webSocket } = options;
+    const { id, name, pieces, origin, messenger } = options;
 
     this.id = id;
     this.name = name;
     this.pieces = pieces;
     this.origin = origin;
-    this.webSocket = webSocket;
+    this.messenger = messenger;
   }
 }

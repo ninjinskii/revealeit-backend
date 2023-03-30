@@ -1,8 +1,8 @@
-import { WebSocketClient } from "../../deps.ts";
 import { Board } from "../domain/Board.ts";
 import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
+import { Messenger } from "./Messenger";
 
 export enum MessageType {
   MOVE = "move",
@@ -15,89 +15,117 @@ export enum MessageType {
   LOST = "lost",
 }
 
-export class MessageReceiver {
-  constructor(private factory: MessageHandlerFactory) {}
+abstract class Message {
+  constructor(public readonly key: string, protected content: string) {}
+}
 
-  handleMessage(board?: Board) {
-    const handler = this.factory.getMessageHandler();
-    handler.handleMessage(board);
+export abstract class SendableMessage extends Message {
+  abstract prepare(): SendableMessage;
+
+  build(): string {
+      return `${super.key}:${super.content}`;
   }
 }
 
-export class MessageHandlerFactory {
-  private key: string;
+export abstract class ReceiveableMessage extends Message {
+  abstract execute(board: Board);
+}
 
+export class HandshakeMessage extends ReceiveableMessage {
   constructor(
-    private message: string,
-    private webSocket: WebSocketClient,
-    private players: Player[],
-    private onGameStarted: () => void,
+      key: string,
+      protected content: string,
+      private messenger: Messenger,
+      private waitingPlayers: Player[],
+      private onGameStarted: () => void,
   ) {
-    this.key = message.split(":")[0];
+      super(key, content)
   }
 
-  getMessageHandler(): MessageHandler {
-    switch (this.key) {
-      case MessageType.MOVE:
-        return new MoveMessageHandler(this.message, this.webSocket);
-      case MessageType.KILL:
-        return new KillMessageHandler(this.message, this.webSocket);
-      case MessageType.HANDSHAKE:
-        return new HandshakeMessageHandler(
-          this.message,
-          this.webSocket,
-          this.players,
-          this.onGameStarted,
-        );
-    }
+  execute(board: Board) {
+      const [playerId, playerName] = this.content.split(",");
+      const inGamePlayer = board
+          ? board.players.find((player) => player.id === playerId)
+          : this.waitingPlayers.find((player) => player.id === playerId);
+      const isNewPlayer = !inGamePlayer;
 
-    throw new Error(
-      `Cannot get a message handler: unknown message key: ${this.key}`,
-    );
+      if (isNewPlayer) {
+          if (board) {
+              return;
+          }
+
+          const waitingPlayerCount = this.waitingPlayers.length;
+
+          const player = new Player({
+              id: playerId,
+              name: playerName,
+              origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
+              pieces: Rules.PLAYER_PIECES_GENERATOR(playerId),
+              messenger: this.messenger,
+          });
+
+          this.waitingPlayers.push(player);
+
+          const shouldStartGame =
+              waitingPlayerCount + 1 === Rules.ACTIVE_PLAYER_NUMBER;
+
+          if (shouldStartGame) {
+              try {
+                  this.onGameStarted();
+              } catch (error) {
+              }
+          }
+      } else {
+          inGamePlayer.messenger = this.messenger;
+
+          if (board) {
+              const updatePlayers = new PlayersMessage(board);
+              const updateBoard = new BoardUpdateMessage(board, inGamePlayer);
+              const updateTurn = new TurnMessage(board);
+
+              this.messenger.sendMessage(updatePlayers)
+              this.messenger.sendMessage(updateBoard)
+              this.messenger.sendMessage(updateTurn)
+          }
+      }
   }
 }
 
-interface MessageHandler {
-  handleMessage(board?: Board): void;
-}
+export class MoveMessage extends ReceiveableMessage {
+  constructor(key: string, protected content: string, private messenger: Messenger) {
+      super(key, content)
+  }
 
-export interface MessageSender {
-  sendMessage(player: Player | WebSocketClient, board: Board): void;
-}
-
-class MoveMessageHandler implements MessageHandler {
-  constructor(public message: string, public webSocket: WebSocketClient) {}
-
-  handleMessage(board?: Board) {
+  execute(board: Board) {
     try {
       if (!board) {
         throw new Error(`Cannot move: game hasn't started yet`);
       }
 
-      const content = this.message.split(":")[1];
-      const [fromX, fromY, toY, toX] = content.split(",").map((value) =>
+      const [fromX, fromY, toY, toX] = this.content.split(",").map((value) =>
         parseInt(value)
       );
       const slot = board.getSlot(fromX, fromY);
 
       board.movePieceTo(slot.piece, toY, toX);
     } catch (error) {
-      new ErrorMessageSender(error).sendMessage(this.webSocket);
+      // use messenger to send error
     }
   }
 }
 
-class KillMessageHandler implements MessageHandler {
-  constructor(public message: string, public webSocket: WebSocketClient) {}
+export class KillMessage extends ReceiveableMessage {
+  constructor(key: string, protected content: string, private messenger: Messenger) {
+      super(key, content)
+  }
 
-  handleMessage(board: Board) {
+  execute(board: Board) {
     try {
       if (!board) {
         throw new Error(`Cannot kill: game hasn't started yet`);
       }
 
-      const content = this.message.split(":")[1];
-      const [playerId, toX, toY] = content.split(",");
+      const [playerId, toX, toY] = this.content.split(",");
       const player = board.players.find((player) => player.id === playerId);
 
       if (!player) {
@@ -106,134 +134,92 @@ class KillMessageHandler implements MessageHandler {
 
       board.killPieceAt(player, parseInt(toX), parseInt(toY));
     } catch (error) {
-      new ErrorMessageSender(error).sendMessage(this.webSocket);
+      // use messenger to send error
     }
   }
 }
 
-class HandshakeMessageHandler implements MessageHandler {
-  constructor(
-    private message: string,
-    private webSocket: WebSocketClient,
-    private waitingPlayers: Player[],
-    private onGameStarted: () => void,
-  ) {}
+export class BoardUpdateMessage extends SendableMessage {
+  constructor(private board: Board, private player: Player) {
+      super(MessageType.BOARD, "")
+  }
 
-  handleMessage(board?: Board) {
-    const [playerId, playerName] = this.message.split(":")[1].split(",");
-    const inGamePlayer = board
-      ? board.players.find((player) => player.id === playerId)
-      : this.waitingPlayers.find((player) => player.id === playerId);
-    const isNewPlayer = !inGamePlayer;
+  prepare(): SendableMessage {
+      const revealedZone = this.board.getRevealedZoneForPlayer(this.player)
 
-    if (isNewPlayer) {
-      if (board) {
-        return;
-      }
+      const compressedRevealedZone = revealedZone.map((slot) => ({
+          x: slot.x,
+          y: slot.y,
+          piece: PieceDTO.fromPiece(slot.piece),
+      }));
+  
+      const result = { revealed: compressedRevealedZone, killable: [] };
+      const playerKills = this.board.getKillableSlotsForPlayer(this.player).map(
+          (slot) => ({
+          x: slot.x,
+          y: slot.y,
+          piece: PieceDTO.fromPiece(slot.piece),
+          }),
+      );
+      result.killable = playerKills as never[];
+  
+      super.content = `${MessageType.BOARD}:${
+          JSON.stringify(result).replaceAll(":", "@")
+      }`;
 
-      const waitingPlayerCount = this.waitingPlayers.length;
-
-      const player = new Player({
-        id: playerId,
-        name: playerName,
-        origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
-        pieces: Rules.PLAYER_PIECES_GENERATOR(playerId),
-        webSocket: this.webSocket,
-      });
-
-      this.waitingPlayers.push(player);
-
-      const shouldStartGame =
-        waitingPlayerCount + 1 === Rules.ACTIVE_PLAYER_NUMBER;
-
-      if (shouldStartGame) {
-        try {
-          this.onGameStarted();
-        } catch (error) {
-        }
-      }
-    } else {
-      inGamePlayer.webSocket = this.webSocket;
-
-      if (board) {
-        const updatePlayers = new PlayersMessageSender(board);
-        const updateBoard = new BoardUpdateMessageSender(board);
-        const updateTurn = new TurnMessageSender(board);
-        updateBoard.sendMessage(inGamePlayer);
-        updatePlayers.sendMessage(inGamePlayer);
-        updateTurn.sendMessage(inGamePlayer);
-      }
-    }
+      return this
   }
 }
 
-export class BoardUpdateMessageSender implements MessageSender {
-  constructor(public board: Board) {}
-
-  sendMessage(player: Player) {
-    const revealedZone = this.board.getRevealedZoneForPlayer(player)
-
-    const compressedRevealedZone = revealedZone.map((slot) => ({
-      x: slot.x,
-      y: slot.y,
-      piece: PieceDTO.fromPiece(slot.piece),
-    }));
-
-    const result = { revealed: compressedRevealedZone, killable: [] };
-    const playerKills = this.board.getKillableSlotsForPlayer(player).map(
-      (slot) => ({
-        x: slot.x,
-        y: slot.y,
-        piece: PieceDTO.fromPiece(slot.piece),
-      }),
-    );
-    result.killable = playerKills as never[];
-
-    const message = `${MessageType.BOARD}:${
-      JSON.stringify(result).replaceAll(":", "@")
-    }`;
-
-    player.webSocket.send(message);
+export class PlayersMessage extends SendableMessage {
+  constructor(private board: Board) {
+      super(MessageType.PLAYERS, "")
   }
-}
 
-export class PlayersMessageSender implements MessageSender {
-  constructor(public board: Board) {}
-
-  sendMessage(player: Player) {
+  prepare(): SendableMessage {
     const notLoosers = this.board.players.filter((player) =>
       player.hasLost === false
     ).map((player) => `${player.id},${player.name}`);
 
-    const message = `${MessageType.PLAYERS}:${notLoosers.join("|")}`;
-    player.webSocket.send(message);
+    super.content = `${MessageType.PLAYERS}:${notLoosers.join("|")}`;
+    
+    return this
   }
 }
 
-export class TurnMessageSender implements MessageSender {
-  constructor(public board: Board) {}
+export class TurnMessage extends SendableMessage {
+  constructor(public board: Board) {
+      super(MessageType.TURN, "")
+  }
 
-  sendMessage(player: Player) {
+  prepare(): SendableMessage {
     const currentPlayer = this.board.turn.getCurrentPlayer();
-    const message = `${MessageType.TURN}:${currentPlayer.id}`;
-    player.webSocket.send(message);
+    super.content = `${MessageType.TURN}:${currentPlayer.id}`;
+
+    return this
   }
 }
 
-export class LostMessageSender implements MessageSender {
-  constructor(public board: Board) {}
+export class LostMessage extends SendableMessage {
+  constructor() {
+      super(MessageType.LOST, "")
+  }
 
-  sendMessage(player: Player) {
-    const message = `${MessageType.LOST}`;
-    player.webSocket.send(message);
+  prepare(): SendableMessage {
+    super.content = `${MessageType.LOST}`;
+      
+    return this
   }
 }
 
-class ErrorMessageSender implements MessageSender {
-  constructor(public error: Error) {}
+export class ErrorMessage extends SendableMessage {
+  constructor(public error: Error) {
+      super(MessageType.ERROR, "")
+  }
 
-  sendMessage(webSocket: WebSocketClient) {
-    const message = `${MessageType.ERROR}:${this.error.message}`;
-    webSocket.send(message);
+  prepare(): SendableMessage {
+    super.content = `${MessageType.ERROR}:${this.error.message}`;
+
+    return this
   }
 }
