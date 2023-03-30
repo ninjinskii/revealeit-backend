@@ -2,6 +2,10 @@ import { Player } from "../model/Player.ts";
 import { Constants } from "../model/Constants.ts";
 import { MessageType } from "./Message.ts";
 import { SendableMessage, ReceiveableMessage, HandshakeMessage, KillMessage, MoveMessage } from "./Message.ts";
+import { BoardErrorRegistor } from "../util/BoardErrorHandler.ts";
+import { Logger } from "../util/Logger.ts";
+import { LogAndPushErrorRegistor } from "../util/BoardErrorHandler";
+import { InfamousLogger } from "../util/Logger";
 
 interface ReceiveableMessageObserver<T> {
     messageKey: string;
@@ -43,42 +47,45 @@ export abstract class Messenger {
 }
 
 export class WebSocketMessenger extends Messenger {
-    private websocket: WebSocketClient;
     private onCloseListener?: (number) => void;
+    private errorHandler = new LogAndPushErrorRegistor(this, new InfamousLogger())
   
-    constructor(webSocket: WebSocketClient, players: Player[], onGameStarted: () => void) {
+    constructor(private webSocket: WebSocketClient, players: Player[], onGameStarted: () => void) {
       super(players, onGameStarted);
-      this.websocket = webSocket
   
-      this.websocket.on(
+      webSocket.on(
         "message",
         (rawMessage: string) => {
-            super.receiveMessage(rawMessage).execute()
+            try {
+                super.receiveMessage(rawMessage).execute()
+            } catch (error) {
+                this.errorHandler.registerError(error)
+            }
             // this.observers
             //   .find((observer) => observer.messageKey === message.key)
             //   ?.onMessageReceived(message);
         },
       );
   
-      this.websocket.on("error", () => {
+      webSocket.on("error", () => {
         console.log("socket error")
       });
   
-      this.websocket.on("close", (code: number) => {
+      webSocket.on("close", (code: number) => {
         this.onCloseListener?.call(this, code)
       });
     }
 
     isClosed(): boolean {
-        return this.websocket.isClosed()
+        return this.webSocket.isClosed()
     }
   
     sendMessage(message: SendableMessage): void {
-      this.websocket.send(message.prepare().build());
+      this.webSocket.send(message.prepare().build());
     }
   
     endCommunication(): void {
-        this.websocket.close(Constants.WEB_SOCKET_CLOSE_END_GAME_CODE)
+        this.webSocket.close(Constants.WEB_SOCKET_CLOSE_END_GAME_CODE)
     }
 
     setOnClosedListener(listener: (closeCode: number) => void): void {

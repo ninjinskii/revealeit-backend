@@ -3,6 +3,7 @@ import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
 import { Messenger } from "./Messenger.ts";
+import { LogAndPushErrorRegistor } from "../util/BoardErrorHandler";
 
 export enum MessageType {
   MOVE = "move",
@@ -73,6 +74,7 @@ export class HandshakeMessage extends ReceiveableMessage {
               try {
                   this.onGameStarted();
               } catch (error) {
+                const errorRegistor = new LogAndPushErrorRegistor()
               }
           }
       } else {

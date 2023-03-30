@@ -5,7 +5,7 @@ import {
 import { Board } from "./domain/Board.ts";
 import { Constants } from "./model/Constants.ts";
 import { Player } from "./model/Player.ts";
-import { WebSocketMessenger } from "./network/Messenger";
+import { WebSocketMessenger } from "./network/Messenger.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
 const players: Player[] = [];
