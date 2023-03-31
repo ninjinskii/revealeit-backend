@@ -11,7 +11,6 @@ import {
 import { WebSocketClient } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 import { Board } from "../domain/Board.ts";
 import { LogAndPushErrorHandler } from "../util/BoardErrorHandler.ts";
-import { InfamousLogger } from "../util/Logger.ts";
 
 export abstract class Messenger {
   constructor(
@@ -49,7 +48,7 @@ export abstract class Messenger {
 
 export class WebSocketMessenger extends Messenger {
   private onCloseListener?: (code: number) => void;
-  private errorHandler = new LogAndPushErrorHandler(this, new InfamousLogger());
+  private errorHandler = new LogAndPushErrorHandler(this);
 
   constructor(
     private webSocket: WebSocketClient,
@@ -63,8 +62,6 @@ export class WebSocketMessenger extends Messenger {
       "message",
       (rawMessage: string) => {
         try {
-          console.log("board from execute")
-          console.log(board?.players.map(p => p.name))
           this.receiveMessage(rawMessage).execute(board);
         } catch (error) {
           this.errorHandler.registerError(error);
@@ -82,7 +79,7 @@ export class WebSocketMessenger extends Messenger {
   }
 
   isClosed(): boolean {
-    const closed = this.webSocket.isClosed
+    const closed = this.webSocket.isClosed;
     return closed === true || closed === undefined;
   }
 

@@ -6,8 +6,6 @@ import { Board } from "./domain/Board.ts";
 import { Constants } from "./model/Constants.ts";
 import { Player } from "./model/Player.ts";
 import { WebSocketMessenger } from "./network/Messenger.ts";
-import { LogAndPushErrorHandler } from "./util/BoardErrorHandler.ts";
-import { InfamousLogger } from "./util/Logger.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
 const players: Player[] = [];
@@ -16,17 +14,11 @@ const board = new Board();
 serverWebSocket.on(
   "connection",
   (webSocket: WebSocketClient) => {
-    console.log("board from main")
-    console.log(board?.players.map(p => p.name))
     const messenger = new WebSocketMessenger(
       webSocket,
       board,
       players,
       startGame,
-    );
-    const errorHandler = new LogAndPushErrorHandler(
-      messenger,
-      new InfamousLogger(),
     );
     messenger.setOnClosedListener(checkResetGame);
   },
@@ -54,5 +46,5 @@ function resetGame() {
     .forEach((player) => player.messenger.endCommunication());
 
   players.length = 0;
-  board.players.length = 0
+  board.players.length = 0;
 }

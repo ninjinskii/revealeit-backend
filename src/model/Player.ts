@@ -16,7 +16,6 @@ export interface PlayerOrigin {
   yModifier: 1 | -1;
 }
 
-
 export class Player {
   public id: string;
   public name: string;
