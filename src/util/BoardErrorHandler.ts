@@ -4,10 +4,10 @@ import { BoardError } from "./BoardError.ts";
 import { Logger } from "./Logger.ts";
 
 export interface BoardErrorHandler {
-    registerError(error: BoardError)
+    registerError(error: BoardError): void
 }
 
-export class LogAndPushErrorRegistor implements BoardErrorHandler {
+export class LogAndPushErrorHandler implements BoardErrorHandler {
     constructor(private messenger: Messenger, private logger: Logger) {}
 
     registerError(error: BoardError) {

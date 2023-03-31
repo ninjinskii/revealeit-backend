@@ -1,9 +1,6 @@
-import {
-  BoardUpdateMessageSender,
-  PlayersMessageSender,
-} from "../network/Message.ts";
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
+import { BoardUpdateMessage, PlayersMessage } from "../network/Message.ts";
 import { Rules } from "./Rules.ts";
 import { Turn } from "./Turn.ts";
 
@@ -18,9 +15,6 @@ export class Board {
   public flattenedSlots: Slot[] = [];
   public turn = new Turn(this);
   public slots: Slot[][] = [];
-
-  private boardUpdateSender = new BoardUpdateMessageSender(this);
-  private playersMessageSender = new PlayersMessageSender(this);
 
   init(players: Player[]) {
     this.players = players;
@@ -346,14 +340,16 @@ export class Board {
   }
 
   broadcastBoardUpdate() {
-    this.players.forEach((player) =>
-      this.boardUpdateSender.sendMessage(player)
-    );
+    this.players.forEach((player) => {
+      const message = new BoardUpdateMessage(this, player);
+      player.messenger.sendMessage(message);
+    });
   }
 
   broadcastPlayersUpdate() {
-    this.players.forEach((player) =>
-      this.playersMessageSender.sendMessage(player)
-    );
+    this.players.forEach((player) => {
+      const message = new PlayersMessage(this)
+      player.messenger.sendMessage(message)
+    });
   }
 }

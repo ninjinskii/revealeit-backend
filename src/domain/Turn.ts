@@ -1,43 +1,37 @@
-import {
-  LostMessageSender,
-  PlayersMessageSender,
-  TurnMessageSender,
-} from "../network/Message.ts";
 import { Board } from "./Board.ts";
 import { NoMorePieceLooseCondition } from "./LooseCondition.ts";
-import { Piece } from "../domain/Piece.ts";
-import { Player } from "../domain/Player.ts";
+import { Piece } from "../model/Piece.ts";
+import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
+import {
+  LostMessage,
+  PlayersMessage,
+  TurnMessage,
+} from "../network/Message.ts";
 
 export class Turn {
   private currentPlayerPosition = 0;
   private moveCount = 0;
-  private turnMessageSender: TurnMessageSender;
-  private playersMessageSender: PlayersMessageSender;
-  private lostMessageSender: LostMessageSender;
   private lastMovedPiece: Piece | null = null;
   public waitForKill = false;
 
-  constructor(private board: Board) {
-    this.turnMessageSender = new TurnMessageSender(board);
-    this.playersMessageSender = new PlayersMessageSender(board);
-    this.lostMessageSender = new LostMessageSender(board);
-  }
+  constructor(private board: Board) {}
 
   public getCurrentPlayer(): Player {
     return this.board.players[this.currentPlayerPosition];
   }
 
   public start() {
-    this.board.players.forEach((player) =>
-      this.turnMessageSender.sendMessage(player)
-    );
+    this.board.players.forEach((player) => {
+      const message = new TurnMessage(this.board);
+      player.messenger.sendMessage(message);
+    });
   }
 
   public end() {
     this.lastMovedPiece = null;
     this.moveCount = 0;
-    // TODO: this is wring when a player has lost and player count > 2
+    // TODO: this is wrong when a player has lost and player count > 2
     this.currentPlayerPosition = ++this.currentPlayerPosition %
       Rules.PLAYER_NUMBER;
 
@@ -46,7 +40,7 @@ export class Turn {
   }
 
   public registerPlay(movedPiece?: Piece | undefined) {
-    const playerPiecesCount = this.getCurrentPlayer().pieces.length
+    const playerPiecesCount = this.getCurrentPlayer().pieces.length;
     const hasReachedMaxMove = ++this.moveCount === playerPiecesCount;
     const player = this.getCurrentPlayer();
     const killAvailables =
@@ -71,12 +65,16 @@ export class Turn {
     }
 
     looser.hasLost = true;
-    this.lostMessageSender.sendMessage(looser);
+
+    const lostMessage = new LostMessage();
+    looser.messenger.sendMessage(lostMessage);
 
     this.board.onPlayerLost(looser);
     this.board.players.forEach((player) => {
       this.board.broadcastBoardUpdate();
-      this.playersMessageSender.sendMessage(player);
+
+      const playersMessage = new PlayersMessage(this.board);
+      player.messenger.sendMessage(playersMessage);
     });
   }
 

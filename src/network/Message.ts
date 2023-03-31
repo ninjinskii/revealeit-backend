@@ -3,7 +3,6 @@ import { PieceDTO } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
 import { Messenger } from "./Messenger.ts";
-import { LogAndPushErrorRegistor } from "../util/BoardErrorHandler.ts";
 
 export enum MessageType {
   MOVE = "move",
@@ -24,77 +23,76 @@ export abstract class SendableMessage extends Message {
   abstract prepare(): SendableMessage;
 
   build(): string {
-      return `${super.key}:${super.content}`;
+    return `${this.key}:${this.content}`;
   }
 }
 
 export abstract class ReceiveableMessage extends Message {
-  abstract execute(board: Board);
+  abstract execute(board?: Board): void;
 }
 
 export class HandshakeMessage extends ReceiveableMessage {
   constructor(
-      key: string,
-      protected content: string,
-      private messenger: Messenger,
-      private waitingPlayers: Player[],
-      private onGameStarted: () => void,
+    key: string,
+    protected content: string,
+    private messenger: Messenger,
+    private waitingPlayers: Player[],
+    private onGameStarted: () => void,
   ) {
-      super(key, content)
+    super(key, content);
   }
 
-  execute(board: Board) {
-      const [playerId, playerName] = this.content.split(",");
-      const inGamePlayer = board
-          ? board.players.find((player) => player.id === playerId)
-          : this.waitingPlayers.find((player) => player.id === playerId);
-      const isNewPlayer = !inGamePlayer;
+  execute(board?: Board) {
+    const [playerId, playerName] = this.content.split(",");
+    const inGamePlayer = board
+      ? board.players.find((player) => player.id === playerId)
+      : this.waitingPlayers.find((player) => player.id === playerId);
+    const isNewPlayer = !inGamePlayer;
 
-      if (isNewPlayer) {
-          if (board) {
-              return;
-          }
-
-          const waitingPlayerCount = this.waitingPlayers.length;
-
-          const player = new Player({
-              id: playerId,
-              name: playerName,
-              origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
-              pieces: Rules.PLAYER_PIECES_GENERATOR(playerId),
-              messenger: this.messenger,
-          });
-
-          this.waitingPlayers.push(player);
-
-          const shouldStartGame =
-              waitingPlayerCount + 1 === Rules.ACTIVE_PLAYER_NUMBER;
-
-          if (shouldStartGame) {
-            this.onGameStarted();
-          }
-      } else {
-          inGamePlayer.messenger = this.messenger;
-
-          if (board) {
-              const updatePlayers = new PlayersMessage(board);
-              const updateBoard = new BoardUpdateMessage(board, inGamePlayer);
-              const updateTurn = new TurnMessage(board);
-
-              this.messenger.sendMessage(updatePlayers)
-              this.messenger.sendMessage(updateBoard)
-              this.messenger.sendMessage(updateTurn)
-          }
+    if (isNewPlayer) {
+      if (board?.players.length === Rules.PLAYER_NUMBER) {
+        return;
       }
+
+      const waitingPlayerCount = this.waitingPlayers.length;
+
+      const player = new Player({
+        id: playerId,
+        name: playerName,
+        origin: Rules.PLAYER_ORIGINS[waitingPlayerCount],
+        pieces: Rules.PLAYER_PIECES_GENERATOR(playerId),
+        messenger: this.messenger,
+      });
+
+      this.waitingPlayers.push(player);
+
+      const shouldStartGame = waitingPlayerCount + 1 === Rules.PLAYER_NUMBER;
+
+      if (shouldStartGame) {
+        this.onGameStarted();
+      }
+    } else {
+      inGamePlayer.messenger = this.messenger;
+
+      if (board) {
+        const updatePlayers = new PlayersMessage(board);
+        const updateBoard = new BoardUpdateMessage(board, inGamePlayer);
+        const updateTurn = new TurnMessage(board);
+
+        this.messenger.sendMessage(updatePlayers);
+        this.messenger.sendMessage(updateBoard);
+        this.messenger.sendMessage(updateTurn);
+      }
+    }
   }
 }
 
 export class MoveMessage extends ReceiveableMessage {
   constructor(key: string, protected content: string) {
-      super(key, content)
+    super(key, content);
   }
 
-  execute(board: Board) {
+  execute(board?: Board) {
     if (!board) {
       throw new Error(`Cannot move: game hasn't started yet`);
     }
@@ -110,10 +108,10 @@ export class MoveMessage extends ReceiveableMessage {
 
 export class KillMessage extends ReceiveableMessage {
   constructor(key: string, protected content: string) {
-    super(key, content)
+    super(key, content);
   }
 
-  execute(board: Board) {
+  execute(board?: Board) {
     if (!board) {
       throw new Error(`Cannot kill: game hasn't started yet`);
     }
@@ -131,39 +129,37 @@ export class KillMessage extends ReceiveableMessage {
 
 export class BoardUpdateMessage extends SendableMessage {
   constructor(private board: Board, private player: Player) {
-      super(MessageType.BOARD, "")
+    super(MessageType.BOARD, "");
   }
 
   prepare(): SendableMessage {
-      const revealedZone = this.board.getRevealedZoneForPlayer(this.player)
+    const revealedZone = this.board.getRevealedZoneForPlayer(this.player);
 
-      const compressedRevealedZone = revealedZone.map((slot) => ({
-          x: slot.x,
-          y: slot.y,
-          piece: PieceDTO.fromPiece(slot.piece),
-      }));
-  
-      const result = { revealed: compressedRevealedZone, killable: [] };
-      const playerKills = this.board.getKillableSlotsForPlayer(this.player).map(
-          (slot) => ({
-          x: slot.x,
-          y: slot.y,
-          piece: PieceDTO.fromPiece(slot.piece),
-          }),
-      );
-      result.killable = playerKills as never[];
-  
-      super.content = `${MessageType.BOARD}:${
-          JSON.stringify(result).replaceAll(":", "@")
-      }`;
+    const compressedRevealedZone = revealedZone.map((slot) => ({
+      x: slot.x,
+      y: slot.y,
+      piece: PieceDTO.fromPiece(slot.piece),
+    }));
 
-      return this
+    const result = { revealed: compressedRevealedZone, killable: [] };
+    const playerKills = this.board.getKillableSlotsForPlayer(this.player).map(
+      (slot) => ({
+        x: slot.x,
+        y: slot.y,
+        piece: PieceDTO.fromPiece(slot.piece),
+      }),
+    );
+    result.killable = playerKills as never[];
+
+    this.content = JSON.stringify(result).replaceAll(":", "@");
+
+    return this;
   }
 }
 
 export class PlayersMessage extends SendableMessage {
   constructor(private board: Board) {
-      super(MessageType.PLAYERS, "")
+    super(MessageType.PLAYERS, "");
   }
 
   prepare(): SendableMessage {
@@ -171,45 +167,43 @@ export class PlayersMessage extends SendableMessage {
       player.hasLost === false
     ).map((player) => `${player.id},${player.name}`);
 
-    super.content = `${MessageType.PLAYERS}:${notLoosers.join("|")}`;
-    
-    return this
+    this.content = notLoosers.join("|");
+
+    return this;
   }
 }
 
 export class TurnMessage extends SendableMessage {
   constructor(public board: Board) {
-      super(MessageType.TURN, "")
+    super(MessageType.TURN, "");
   }
 
   prepare(): SendableMessage {
     const currentPlayer = this.board.turn.getCurrentPlayer();
-    super.content = `${MessageType.TURN}:${currentPlayer.id}`;
+    this.content = currentPlayer.id;
 
-    return this
+    return this;
   }
 }
 
 export class LostMessage extends SendableMessage {
   constructor() {
-      super(MessageType.LOST, "")
+    super(MessageType.LOST, "");
   }
 
   prepare(): SendableMessage {
-    super.content = `${MessageType.LOST}`;
-      
-    return this
+    return this;
   }
 }
 
 export class ErrorMessage extends SendableMessage {
   constructor(public error: Error) {
-      super(MessageType.ERROR, "")
+    super(MessageType.ERROR, "");
   }
 
   prepare(): SendableMessage {
-    super.content = `${MessageType.ERROR}:${this.error.message}`;
+    this.content = this.error.message;
 
-    return this
+    return this;
   }
 }

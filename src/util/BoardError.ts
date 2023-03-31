@@ -1,6 +1,6 @@
 interface BoardErrorOptions {
     rawMessage: string;
-    httpCode: number;       // Never used right now, but giveas additional context fore developers on errors
+    httpCode: number;       // Never used right now, but gives additional context fore developers on errors
     clientTranslationKey: string;
 }
 

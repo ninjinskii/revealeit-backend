@@ -1,7 +1,7 @@
 export interface Logger {
-    log(message: string)
-    warn(message: string)
-    error(message: string)
+    log(message: string): void
+    warn(message: string): void
+    error(message: string): void
 }
 
 export class InfamousLogger implements Logger {

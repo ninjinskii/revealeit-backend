@@ -6,29 +6,42 @@ import { Board } from "./domain/Board.ts";
 import { Constants } from "./model/Constants.ts";
 import { Player } from "./model/Player.ts";
 import { WebSocketMessenger } from "./network/Messenger.ts";
+import { LogAndPushErrorHandler } from "./util/BoardErrorHandler.ts";
+import { InfamousLogger } from "./util/Logger.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
 const players: Player[] = [];
-let game: Board | undefined = undefined;
+const board = new Board();
 
 serverWebSocket.on(
   "connection",
   (webSocket: WebSocketClient) => {
-      const messenger = new WebSocketMessenger(webSocket, players, startGame)
-      messenger.setOnClosedListener(checkResetGame)
+    console.log("board from main")
+    console.log(board?.players.map(p => p.name))
+    const messenger = new WebSocketMessenger(
+      webSocket,
+      board,
+      players,
+      startGame,
+    );
+    const errorHandler = new LogAndPushErrorHandler(
+      messenger,
+      new InfamousLogger(),
+    );
+    messenger.setOnClosedListener(checkResetGame);
   },
 );
 
 function startGame() {
-  const board = new Board();
   board.init([...players]);
-  game = board;
   players.length = 0;
 }
 
 function checkResetGame(closeCode: number) {
-  const everybodyHasQuit = game && game.players.every((player) => player.webSocket.isClosed)
-  const clientRequestGameToEnd = closeCode === Constants.WEB_SOCKET_CLOSE_END_GAME_CODE
+  const everybodyHasQuit = board &&
+    board.players.every((player) => player.messenger.isClosed());
+  const clientRequestGameToEnd =
+    closeCode === Constants.WEB_SOCKET_CLOSE_END_GAME_CODE;
 
   if (everybodyHasQuit || clientRequestGameToEnd) {
     resetGame();
@@ -38,10 +51,8 @@ function checkResetGame(closeCode: number) {
 function resetGame() {
   players
     .filter((player) => !player.messenger.isClosed())
-    .forEach((player) =>
-      player.mesenger.endCommunication(Constants.WEB_SOCKET_CLOSE_DEFAULT_CODE)
-    );
+    .forEach((player) => player.messenger.endCommunication());
 
   players.length = 0;
-  game = undefined;
+  board.players.length = 0
 }
