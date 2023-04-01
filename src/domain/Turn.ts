@@ -2,7 +2,7 @@ import { Board } from "./Board.ts";
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
-import { LooseConditionFactory } from "./LooseCondition.ts";
+import { LooseConditionFactory, LooseConditionDescriptor } from "./LooseCondition.ts";
 import {
   LostMessage,
   PlayersMessage,
@@ -55,7 +55,7 @@ export class Turn {
   }
 
   public checkLooseCondition() {
-    const looseConditionDescriptor = Rules.LOOSE_CONDITION
+    const looseConditionDescriptor = Rules.LOOSE_CONDITION as LooseConditionDescriptor
     const looseCondition = 
       LooseConditionFactory.getLooseCondition(looseConditionDescriptor);
 
