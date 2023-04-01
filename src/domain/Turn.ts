@@ -1,8 +1,8 @@
 import { Board } from "./Board.ts";
-import { NoMorePieceLooseCondition } from "./LooseCondition.ts";
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
+import { LooseConditionFactory } from "./LooseCondition.ts";
 import {
   LostMessage,
   PlayersMessage,
@@ -55,7 +55,10 @@ export class Turn {
   }
 
   public checkLooseCondition() {
-    const looseCondition = new NoMorePieceLooseCondition();
+    const looseConditionDescriptor = Rules.LOOSE_CONDITION
+    const looseCondition = 
+      LooseConditionFactory.getLooseCondition(looseConditionDescriptor);
+
     const looser = this.board.players.find((player) =>
       looseCondition.hasLost(this.board, player)
     );
