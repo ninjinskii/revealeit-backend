@@ -29,12 +29,11 @@ export abstract class Messenger {
 
     switch (key) {
       case MessageType.MOVE:
-        return new MoveMessage(key, content);
+        return new MoveMessage(content);
       case MessageType.KILL:
-        return new KillMessage(key, content);
+        return new KillMessage(content);
       case MessageType.HANDSHAKE:
         return new HandshakeMessage(
-          key,
           content,
           this,
           this.players,
@@ -52,7 +51,7 @@ export class WebSocketMessenger extends Messenger {
 
   constructor(
     private webSocket: WebSocketClient,
-    private board: Board | undefined,
+    board: Board | undefined,
     waitingPlayers: Player[],
     onGameStarted: () => void,
   ) {

@@ -34,13 +34,12 @@ export abstract class ReceiveableMessage extends Message {
 
 export class HandshakeMessage extends ReceiveableMessage {
   constructor(
-    key: string,
     protected content: string,
     private messenger: Messenger,
     private waitingPlayers: Player[],
     private onGameStarted: () => void,
   ) {
-    super(key, content);
+    super(MessageType.HANDSHAKE, content);
   }
 
   execute(board?: Board) {
@@ -92,8 +91,8 @@ export class HandshakeMessage extends ReceiveableMessage {
 }
 
 export class MoveMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string) {
-    super(key, content);
+  constructor(protected content: string) {
+    super(MessageType.MOVE, content);
   }
 
   execute(board?: Board) {
@@ -105,24 +104,24 @@ export class MoveMessage extends ReceiveableMessage {
       });
     }
 
-    const [fromX, fromY, toY, toX] = this.content.split(",").map((value) =>
+    const [fromX, fromY, toX, toY] = this.content.split(",").map((value) =>
       parseInt(value)
     );
     const slot = board.getSlot(fromX, fromY);
 
-    board.movePieceTo(slot.piece, toY, toX);
+    board.movePieceTo(slot.piece, toX, toY);
   }
 }
 
 export class KillMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string) {
-    super(key, content);
+  constructor(protected content: string) {
+    super(MessageType.KILL, content);
   }
 
   execute(board?: Board) {
     if (!board) {
       throw new BoardError({
-        rawMessage: "Cannot move: game hasn't started yet",
+        rawMessage: "Cannot kill: game hasn't started yet",
         httpCode: 400,
         clientTranslationKey: "error__base"
       });
@@ -133,7 +132,7 @@ export class KillMessage extends ReceiveableMessage {
 
     if (!player) {
       throw new BoardError({
-        rawMessage: "Cannot kill piece: killer player not found",
+        rawMessage: "Cannot kill: killer player not found",
         httpCode: 400,
         clientTranslationKey: "error__base"
       });

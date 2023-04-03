@@ -74,7 +74,7 @@ export class Turn {
 
     this.board.onPlayerLost(looser);
     this.board.players.forEach((player) => {
-      this.board.broadcastBoardUpdate();
+      this.board.broadcastBoardUpdate();  // Vraiment obligé de broadcast dans le for each ?
 
       const playersMessage = new PlayersMessage(this.board);
       player.messenger.sendMessage(playersMessage);

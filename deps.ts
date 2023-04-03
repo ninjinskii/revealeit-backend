@@ -13,6 +13,7 @@ export type { Spy, Stub } from "https://deno.land/std@0.173.0/testing/mock.ts";
 export {
   assertEquals,
   assertNotEquals,
+  assertThrows,
 } from "https://deno.land/std@0.130.0/testing/asserts.ts";
 export {
   afterAll,

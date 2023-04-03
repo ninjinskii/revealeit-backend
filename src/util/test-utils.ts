@@ -1,4 +1,6 @@
 import { Spy, stub, returnsNext } from "../../deps.ts";
+import { SendableMessage } from "../network/Message.ts";
+import { Messenger } from "../network/Messenger.ts";
 
 export function spyContext(spies: Spy[], block: () => void): void {
   try {
@@ -16,6 +18,14 @@ export function simpleStub<T>(
   return stub(object, method, returnsNext([returnNext] as never));
 }
 
+export function multipleStub<T>(
+  object: T,
+  method: keyof T,
+  returnNext: unknown[],
+) {
+  return stub(object, method, returnsNext(returnNext as never));
+}
+
 export function simpleStubAsync<T>(
   object: T,
   method: keyof T,
@@ -26,4 +36,16 @@ export function simpleStubAsync<T>(
     method,
     returnsNext([Promise.resolve(returnNext)] as never),
   );
+}
+
+export class FakeMessenger extends Messenger {
+  isClosed(): boolean {
+    return false
+  }
+
+  endCommunication(): void {    
+  }
+
+  sendMessage(message: SendableMessage): void {
+  }
 }
