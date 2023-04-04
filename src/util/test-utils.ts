@@ -1,6 +1,7 @@
 import { Spy, stub, returnsNext } from "../../deps.ts";
-import { SendableMessage } from "../network/Message.ts";
+import { SendableMessage, ReceiveableMessage } from "../network/Message.ts";
 import { Messenger } from "../network/Messenger.ts";
+import { Board } from "../domain/Board.ts"
 
 export function spyContext(spies: Spy[], block: () => void): void {
   try {
@@ -47,5 +48,20 @@ export class FakeMessenger extends Messenger {
   }
 
   sendMessage(message: SendableMessage): void {
+  }
+}
+
+export class FakeSendableMessage extends SendableMessage {
+  constructor() {
+    super("", "")
+  }
+
+  prepare(): SendableMessage {
+    return this
+  }
+}
+
+export class FakeReceiveableMessage extends ReceiveableMessage {
+  execute(board?: Board): void {
   }
 }

@@ -15,7 +15,7 @@ import { LogAndPushErrorHandler } from "../util/BoardErrorHandler.ts";
 export abstract class Messenger {
   constructor(
     private players: Player[],
-    private onGameStarted: () => void,
+    private startGame: () => void,
   ) {}
 
   abstract sendMessage(message: SendableMessage): void;
@@ -37,7 +37,7 @@ export abstract class Messenger {
           content,
           this,
           this.players,
-          this.onGameStarted,
+          this.startGame,
         );
       default:
         throw new Error(`Cannot parse message: key was '${key}'`);
@@ -51,30 +51,17 @@ export class WebSocketMessenger extends Messenger {
 
   constructor(
     private webSocket: WebSocketClient,
-    board: Board | undefined,
+    private board: Board | undefined,
     waitingPlayers: Player[],
-    onGameStarted: () => void,
+    startGame: () => void,
   ) {
-    super(waitingPlayers, onGameStarted);
+    super(waitingPlayers, startGame);
 
-    webSocket.on(
-      "message",
-      (rawMessage: string) => {
-        try {
-          this.receiveMessage(rawMessage).execute(board);
-        } catch (error) {
-          this.errorHandler.registerError(error);
-        }
-      },
-    );
+    webSocket.on("message", this.onMessage);
 
-    webSocket.on("error", () => {
-      console.log("socket error");
-    });
+    webSocket.on("error", this.onError);
 
-    webSocket.on("close", (code: number) => {
-      this.onCloseListener?.call(this, code);
-    });
+    webSocket.on("close", this.onClose);
   }
 
   isClosed(): boolean {
@@ -92,5 +79,21 @@ export class WebSocketMessenger extends Messenger {
 
   setOnClosedListener(listener: (closeCode: number) => void): void {
     this.onCloseListener = listener;
+  }
+
+  private onMessage(rawMessage: string) {
+    try {
+      this.receiveMessage(rawMessage).execute(this.board);
+    } catch (error) {
+      this.errorHandler.registerError(error);
+    }
+  }
+
+  private onClose(code: number) {
+    this.onCloseListener?.call(this, code);
+  }
+
+  private onError() {
+    console.log("socket error")
   }
 }
