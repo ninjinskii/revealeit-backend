@@ -315,9 +315,11 @@ describe("ReceivableMessage", () => {
 
       message.execute(board)
 
-      assertSpyCall(getSlotSpy, 0, { args: [1, 1] })
-      assertSpyCalls(parseIntSpy, 4)
-      assertSpyCall(moveSpy, 0, { args: [piece, 1, 2] })
+      spyContext([parseIntSpy], () => {
+        assertSpyCall(getSlotSpy, 0, { args: [1, 1] })
+        assertSpyCalls(parseIntSpy, 4)
+        assertSpyCall(moveSpy, 0, { args: [piece, 1, 2] })
+      })
     })
   })
 
@@ -338,15 +340,15 @@ describe("ReceivableMessage", () => {
     })
 
     it("should throw a BoardError if player cannot be retrieved", () => {
-
-      // Checkpoint
-      const message = new MoveMessage("")
+      const board = new Board()
+      board.init([player1, player2])
+      const message = new KillMessage("unknownId,0,0")
 
       try {
-        message.execute(undefined)
+        message.execute(board)
       } catch (error) {
         assertEquals(error instanceof BoardError, true)
-        assertEquals(error.message, "Cannot move: game hasn't started yet")
+        assertEquals(error.message, "Cannot kill: killer player not found")
         assertEquals(error.httpCode, 400)
         return
       }
@@ -355,19 +357,14 @@ describe("ReceivableMessage", () => {
     })
 
     it("should be able to kill a piece", () => {
-      const piece = new Explorer(player1.id)
       const board = new Board()
       board.init([player1, player2])
-      const moveSpy = simpleStub(board, "movePieceTo", undefined)
-      const getSlotSpy = simpleStub(board, "getSlot", { x: 1, y: 1, piece })
-      const parseIntSpy = multipleStub(globalThis, "parseInt", [1,1,1,2])
-      const message = new MoveMessage("1,1,1,2")
+      const killSpy = simpleStub(board, "killPieceAt", undefined)
+      const message = new KillMessage("player1,1,1")
 
       message.execute(board)
 
-      assertSpyCall(getSlotSpy, 0, { args: [1, 1] })
-      assertSpyCalls(parseIntSpy, 4)
-      assertSpyCall(moveSpy, 0, { args: [piece, 1, 2] })
+      assertSpyCall(killSpy, 0, { args: [player1, 1, 1] })
     })
   })
 })
