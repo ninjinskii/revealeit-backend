@@ -46,25 +46,6 @@ describe("WebSocketMessenger", () => {
     assertSpyCalls(gameStartSpy, 0);
   });
 
-  // it("should send correct this context when calling websocket event functions", () => {
-  //   const messenger = new WebSocketMessenger(
-  //     fakeWebSocket,
-  //     undefined,
-  //     [],
-  //     gameStartSpy,
-  //   );
-
-  //   const message = {
-  //     execute() {
-  //       assertEquals(this instanceof WebSocketMessenger, true);
-  //     },
-  //   };
-
-  //   const receiveMessageSpy = simpleStub(messenger, "receiveMessage", message);
-
-  //   messenger.receiveMessage("");
-  // });
-
   describe("sendMessage", () => {
     it("can send a message", () => {
       const gameStartSpy = spy();
