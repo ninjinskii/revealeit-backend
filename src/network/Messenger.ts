@@ -57,11 +57,11 @@ export class WebSocketMessenger extends Messenger {
   ) {
     super(waitingPlayers, startGame);
 
-    webSocket.on("message", this.onMessage);
+    webSocket.on("message", this.onMessage.bind(this));
 
-    webSocket.on("error", this.onError);
+    webSocket.on("error", this.onError.bind(this));
 
-    webSocket.on("close", this.onClose);
+    webSocket.on("close", this.onClose.bind(this));
   }
 
   isClosed(): boolean {
@@ -83,7 +83,7 @@ export class WebSocketMessenger extends Messenger {
 
   private onMessage(rawMessage: string) {
     try {
-      this.receiveMessage(rawMessage).execute(this.board);
+      super.receiveMessage(rawMessage).execute(this.board);
     } catch (error) {
       this.errorHandler.registerError(error);
     }
