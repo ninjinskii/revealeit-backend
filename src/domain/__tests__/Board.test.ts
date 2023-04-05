@@ -434,5 +434,26 @@ describe("Board", () => {
         },
       });
     });
+
+    it("can get reveal area", () => {
+      const piece = new FakePiece();
+      const board = new Board();
+      board.init(players);
+      const resolveRevealSpy = simpleStub(
+        piece.actionZone,
+        "resolveReveal",
+        [],
+      );
+      const getSlotSpy = simpleStub(board, "getPieceSlot", {
+        x: 0,
+        y: 0,
+        piece,
+      });
+
+      board.getRevealedZoneForPiece(piece);
+
+      assertSpyCall(getSlotSpy, 0, { args: [piece] });
+      assertSpyCall(resolveRevealSpy, 0, { args: [board.flattenedSlots, 0, 0] });
+    });
   });
 });
