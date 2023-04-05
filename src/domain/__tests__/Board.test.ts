@@ -5,7 +5,6 @@ import {
 import {
   assertEquals,
   assertSpyCall,
-  assertThrows,
   describe,
   it,
 } from "../../../deps.ts";
@@ -16,7 +15,6 @@ import {
   simpleStub,
   spyContext,
 } from "../../util/test-utils.ts";
-import { ActionZone, Direction } from "../ActionZone.ts";
 import { Board } from "../Board.ts";
 import { Rules } from "../Rules.ts";
 
