@@ -48,6 +48,9 @@ export abstract class Messenger {
 export class WebSocketMessenger extends Messenger {
   private onCloseListener?: (code: number) => void;
   private errorHandler = new LogAndPushErrorHandler(this);
+  private boundOnMessage = this.onMessage.bind(this)
+  private boundOnError = this.onError.bind(this)
+  private boundOnClose = this.onClose.bind(this)
 
   constructor(
     private webSocket: WebSocketClient,
@@ -57,11 +60,11 @@ export class WebSocketMessenger extends Messenger {
   ) {
     super(waitingPlayers, startGame);
 
-    webSocket.on("message", this.onMessage.bind(this));
+    webSocket.on("message", this.boundOnMessage);
 
-    webSocket.on("error", this.onError.bind(this));
+    webSocket.on("error", this.boundOnError);
 
-    webSocket.on("close", this.onClose.bind(this));
+    webSocket.on("close", this.boundOnClose);
   }
 
   isClosed(): boolean {
@@ -83,7 +86,7 @@ export class WebSocketMessenger extends Messenger {
 
   private onMessage(rawMessage: string) {
     try {
-      super.receiveMessage(rawMessage).execute(this.board);
+      this.receiveMessage(rawMessage).execute(this.board);
     } catch (error) {
       this.errorHandler.registerError(error);
     }
