@@ -401,7 +401,6 @@ export class Board {
   }
 
   onPlayerLost(player: Player) {
-    player.hasLost = true;
     player.pieces = [];
   }
 

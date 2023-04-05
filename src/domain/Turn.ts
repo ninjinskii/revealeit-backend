@@ -39,10 +39,10 @@ export class Turn {
     this.start();
   }
 
-  public registerPlay(movedPiece?: Piece | undefined) {
-    const playerPiecesCount = this.getCurrentPlayer().pieces.length;
-    const hasReachedMaxMove = ++this.moveCount === playerPiecesCount;
+  public registerPlay(movedPiece?: Piece) {
     const player = this.getCurrentPlayer();
+    const playerPiecesCount = player.pieces.length;
+    const hasReachedMaxMove = ++this.moveCount === playerPiecesCount;
     const killAvailables =
       this.board.getKillableSlotsForPlayer(player).length > 0;
     this.waitForKill = hasReachedMaxMove && killAvailables;
@@ -73,9 +73,8 @@ export class Turn {
     looser.messenger.sendMessage(lostMessage);
 
     this.board.onPlayerLost(looser);
+    this.board.broadcastBoardUpdate();  // Vraiment obligé de broadcast dans le for each ?
     this.board.players.forEach((player) => {
-      this.board.broadcastBoardUpdate();  // Vraiment obligé de broadcast dans le for each ?
-
       const playersMessage = new PlayersMessage(this.board);
       player.messenger.sendMessage(playersMessage);
     });

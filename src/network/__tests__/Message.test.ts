@@ -275,7 +275,7 @@ describe("ReceivableMessage", () => {
       const waitingPlayers: Player[] = []
       const onGameStarted = spy()
       const messenger = new FakeMessenger(waitingPlayers, onGameStarted)
-      const messengerSpy = multipleStub(messenger, "sendMessage", [undefined, undefined, undefined])
+      const messengerSpy = multipleStub(messenger, "sendMessage", new Array(3))
       const message = new HandshakeMessage(player2.id, messenger, waitingPlayers, onGameStarted)
 
       message.execute(board)
