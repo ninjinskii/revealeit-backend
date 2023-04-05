@@ -456,4 +456,6 @@ describe("Board", () => {
       assertSpyCall(resolveRevealSpy, 0, { args: [board.flattenedSlots, 0, 0] });
     });
   });
+
+  // checkpoint
 });

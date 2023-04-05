@@ -394,6 +394,9 @@ export class Board {
     if (this.turn.waitForKill) {
       this.turn.waitForKill = false;
       this.turn.triggerNext();
+      // avoid calling checkLooseConsitionMultiple times by doing:
+      // brodcastBoardUpdate
+      // return
     }
 
     this.turn.checkLooseCondition();
