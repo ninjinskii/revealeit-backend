@@ -2,7 +2,10 @@ import { Board } from "./Board.ts";
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
-import { LooseConditionFactory, LooseConditionDescriptor } from "./LooseCondition.ts";
+import {
+  LooseConditionDescriptor,
+  LooseConditionFactory,
+} from "./LooseCondition.ts";
 import {
   LostMessage,
   PlayersMessage,
@@ -55,9 +58,12 @@ export class Turn {
   }
 
   public checkLooseCondition() {
-    const looseConditionDescriptor = Rules.LOOSE_CONDITION as LooseConditionDescriptor
-    const looseCondition = 
-      LooseConditionFactory.getLooseCondition(looseConditionDescriptor);
+    const looseConditionDescriptor = Rules
+      .LOOSE_CONDITION as LooseConditionDescriptor;
+
+    const looseCondition = LooseConditionFactory.getLooseCondition(
+      looseConditionDescriptor,
+    );
 
     const looser = this.board.players.find((player) =>
       looseCondition.hasLost(this.board, player)
@@ -73,7 +79,7 @@ export class Turn {
     looser.messenger.sendMessage(lostMessage);
 
     this.board.onPlayerLost(looser);
-    this.board.broadcastBoardUpdate();  // Vraiment obligé de broadcast dans le for each ?
+    this.board.broadcastBoardUpdate(); // Vraiment obligé de broadcast dans le for each ?
     this.board.players.forEach((player) => {
       const playersMessage = new PlayersMessage(this.board);
       player.messenger.sendMessage(playersMessage);

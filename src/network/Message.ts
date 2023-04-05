@@ -100,7 +100,7 @@ export class MoveMessage extends ReceiveableMessage {
       throw new BoardError({
         rawMessage: "Cannot move: game hasn't started yet",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -123,7 +123,7 @@ export class KillMessage extends ReceiveableMessage {
       throw new BoardError({
         rawMessage: "Cannot kill: game hasn't started yet",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -134,7 +134,7 @@ export class KillMessage extends ReceiveableMessage {
       throw new BoardError({
         rawMessage: "Cannot kill: killer player not found",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 

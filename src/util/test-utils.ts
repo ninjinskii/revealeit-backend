@@ -1,7 +1,7 @@
-import { Spy, stub, returnsNext } from "../../deps.ts";
-import { SendableMessage, ReceiveableMessage } from "../network/Message.ts";
+import { returnsNext, Spy, stub } from "../../deps.ts";
+import { ReceiveableMessage, SendableMessage } from "../network/Message.ts";
 import { Messenger } from "../network/Messenger.ts";
-import { Board } from "../domain/Board.ts"
+import { Board } from "../domain/Board.ts";
 
 export function spyContext(spies: Spy[], block: () => void): void {
   try {
@@ -41,27 +41,27 @@ export function simpleStubAsync<T>(
 
 export class FakeMessenger extends Messenger {
   isClosed(): boolean {
-    return false
+    return false;
   }
 
-  endCommunication(): void {    
+  endCommunication(): void {
   }
 
-  sendMessage(message: SendableMessage): void {
+  sendMessage(_message: SendableMessage): void {
   }
 }
 
 export class FakeSendableMessage extends SendableMessage {
   constructor() {
-    super("", "")
+    super("", "");
   }
 
   prepare(): SendableMessage {
-    return this
+    return this;
   }
 }
 
 export class FakeReceiveableMessage extends ReceiveableMessage {
-  execute(board?: Board): void {
+  execute(_board?: Board): void {
   }
 }

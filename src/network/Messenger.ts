@@ -94,6 +94,6 @@ export class WebSocketMessenger extends Messenger {
   }
 
   private onError() {
-    console.log("socket error")
+    console.log("socket error");
   }
 }

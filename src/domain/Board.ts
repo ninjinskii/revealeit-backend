@@ -137,7 +137,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot get revealed zone for piece: piece slot not found",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -183,7 +183,7 @@ export class Board {
         throw new BoardError({
           rawMessage: "Cannot get killable pieces: piece slot not found",
           httpCode: 500,
-          clientTranslationKey: "error__base"
+          clientTranslationKey: "error__base",
         });
       }
 
@@ -212,7 +212,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: max play count reached, waiting for a kill",
         httpCode: 400,
-        clientTranslationKey: "error__waiting_for_kill"
+        clientTranslationKey: "error__waiting_for_kill",
       });
     }
 
@@ -220,7 +220,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: mover not found",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -228,7 +228,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: piece already moved this turn",
         httpCode: 400,
-        clientTranslationKey: "error__piece_already_moved"
+        clientTranslationKey: "error__piece_already_moved",
       });
     }
 
@@ -236,9 +236,10 @@ export class Board {
 
     if (!player) {
       throw new BoardError({
-        rawMessage: "Cannot move: player associated with moving piece does not exists",
+        rawMessage:
+          "Cannot move: player associated with moving piece does not exists",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -246,7 +247,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: wait for player turn",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -254,7 +255,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: slot is outside the board",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -262,7 +263,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move too fast",
         httpCode: 400,
-        clientTranslationKey: "error__move_range_outreached"
+        clientTranslationKey: "error__move_range_outreached",
       });
     }
 
@@ -270,7 +271,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move outside piece's revealed zone",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -278,7 +279,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: slot is already taken",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -288,7 +289,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: cannot retrieve piece location",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -306,7 +307,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: wait for player turn",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -318,7 +319,7 @@ export class Board {
       throw new BoardError({
         rawMessage: `Cannot kill: ${player.id} cannot kill piece at ${x},${y}`,
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -326,7 +327,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: slot is outside the board",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -334,7 +335,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: nothing to kill here",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -345,7 +346,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: unable to find targeted piece",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -354,7 +355,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: trying to kill outside piece's revealed zone",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -362,7 +363,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: trying to kill own piece",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -374,7 +375,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: unable to find targeted player",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -413,8 +414,8 @@ export class Board {
 
   broadcastPlayersUpdate() {
     this.players.forEach((player) => {
-      const message = new PlayersMessage(this)
-      player.messenger.sendMessage(message)
+      const message = new PlayersMessage(this);
+      player.messenger.sendMessage(message);
     });
   }
 }

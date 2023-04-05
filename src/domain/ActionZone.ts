@@ -34,15 +34,20 @@ export class ActionZone {
   }
 
   resolveMove(slots: Slot[], positionX: number, positionY: number): Slot[] {
-    return this.resolve({ slots, positionX, positionY, range: this.moveRange })
+    return this.resolve({ slots, positionX, positionY, range: this.moveRange });
   }
 
   resolveReveal(slots: Slot[], positionX: number, positionY: number): Slot[] {
-    return this.resolve({ slots, positionX, positionY, range: this.revealRange })
+    return this.resolve({
+      slots,
+      positionX,
+      positionY,
+      range: this.revealRange,
+    });
   }
 
   resolveKill(slots: Slot[], positionX: number, positionY: number): Slot[] {
-    return this.resolve({ slots, positionX, positionY, range: this.killRange })
+    return this.resolve({ slots, positionX, positionY, range: this.killRange });
   }
 
   getDistance(x1: number, y1: number, x2: number, y2: number) {
@@ -50,33 +55,38 @@ export class ActionZone {
   }
 
   private resolve(options: ResolveOptions): Slot[] {
-    const { slots, positionX, positionY, range } = options
-    const orthogonal: Slot[] = []
-    const diagonal: Slot[] = []
-    const shouldComputeDiagonal = this.direction === Direction.DIAGONAL || this.direction === Direction.ALL
-    const shouldComputeOrthogonal = this.direction === Direction.ORTHOGONAL || this.direction === Direction.ALL
-    const diagonalRange = (range * 1.4142) + 0.4142
+    const { slots, positionX, positionY, range } = options;
+    const orthogonal: Slot[] = [];
+    const diagonal: Slot[] = [];
+    const shouldComputeDiagonal = this.direction === Direction.DIAGONAL ||
+      this.direction === Direction.ALL;
+    const shouldComputeOrthogonal = this.direction === Direction.ORTHOGONAL ||
+      this.direction === Direction.ALL;
+    const diagonalRange = (range * 1.4142) + 0.4142;
 
     for (const slot of slots) {
       if (shouldComputeOrthogonal) {
-        const inRange = this.getDistance(positionX, positionY, slot.x, slot.y) <= range
-        const inDirection = slot.x === positionX || slot.y === positionY
-        
+        const inRange =
+          this.getDistance(positionX, positionY, slot.x, slot.y) <= range;
+        const inDirection = slot.x === positionX || slot.y === positionY;
+
         if (inRange && inDirection) {
-          orthogonal.push(slot)
+          orthogonal.push(slot);
         }
       }
 
       if (shouldComputeDiagonal) {
-        const inRange = this.getDistance(positionX, positionY, slot.x, slot.y) <= diagonalRange
-        const inDirection = slot.x - positionX === slot.y - positionY
-        
+        const inRange =
+          this.getDistance(positionX, positionY, slot.x, slot.y) <=
+            diagonalRange;
+        const inDirection = slot.x - positionX === slot.y - positionY;
+
         if (inRange && inDirection) {
-          diagonal.push(slot)
+          diagonal.push(slot);
         }
       }
     }
 
-    return [...orthogonal, ...diagonal]
+    return [...orthogonal, ...diagonal];
   }
 }
