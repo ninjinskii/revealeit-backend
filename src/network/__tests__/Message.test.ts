@@ -21,6 +21,7 @@ import { Board } from "../../domain/Board.ts";
 import { Player } from "../../model/Player.ts";
 import { Explorer } from "../../model/Piece.ts";
 import {
+  assertThrows,
   FakeMessenger,
   multipleStub,
   simpleStub,
@@ -360,16 +361,17 @@ describe("ReceivableMessage", () => {
     it("should throw a BoardError if game is NOT started", () => {
       const message = new MoveMessage("");
 
-      try {
-        message.execute(undefined);
-      } catch (error) {
-        assertEquals(error instanceof BoardError, true);
-        assertEquals(error.message, "Cannot move: game hasn't started yet");
-        assertEquals(error.httpCode, 400);
-        return;
-      }
-
-      throw new Error("Should not run this line");
+      assertThrows({
+        shouldThrow() {
+          message.execute(undefined);
+        },
+        catch(error) {
+          assertEquals(error instanceof BoardError, true);
+          const _error = error as BoardError;
+          assertEquals(error.message, "Cannot move: game hasn't started yet");
+          assertEquals(_error.httpCode, 400);
+        },
+      });
     });
 
     it("should be able to move a piece", () => {
@@ -395,16 +397,17 @@ describe("ReceivableMessage", () => {
     it("should throw a BoardError if game is NOT started", () => {
       const message = new KillMessage("");
 
-      try {
-        message.execute(undefined);
-      } catch (error) {
-        assertEquals(error instanceof BoardError, true);
-        assertEquals(error.message, "Cannot kill: game hasn't started yet");
-        assertEquals(error.httpCode, 400);
-        return;
-      }
-
-      throw new Error("Should not run this line");
+      assertThrows({
+        shouldThrow() {
+          message.execute(undefined);
+        },
+        catch(error) {
+          assertEquals(error instanceof BoardError, true);
+          const _error = error as BoardError;
+          assertEquals(error.message, "Cannot kill: game hasn't started yet");
+          assertEquals(_error.httpCode, 400);
+        },
+      });
     });
 
     it("should throw a BoardError if player cannot be retrieved", () => {
@@ -412,16 +415,17 @@ describe("ReceivableMessage", () => {
       board.init([player1, player2]);
       const message = new KillMessage("unknownId,0,0");
 
-      try {
-        message.execute(board);
-      } catch (error) {
-        assertEquals(error instanceof BoardError, true);
-        assertEquals(error.message, "Cannot kill: killer player not found");
-        assertEquals(error.httpCode, 400);
-        return;
-      }
-
-      throw new Error("Should not run this line");
+      assertThrows({
+        shouldThrow() {
+          message.execute(board);
+        },
+        catch(error) {
+          assertEquals(error instanceof BoardError, true);
+          const _error = error as BoardError;
+          assertEquals(error.message, "Cannot kill: killer player not found");
+          assertEquals(_error.httpCode, 400);
+        },
+      });
     });
 
     it("should be able to kill a piece", () => {

@@ -1,4 +1,4 @@
-import { returnsNext, Spy, stub } from "../../deps.ts";
+import { AssertionError, returnsNext, Spy, stub } from "../../deps.ts";
 import { ReceiveableMessage, SendableMessage } from "../network/Message.ts";
 import { Messenger } from "../network/Messenger.ts";
 import { Board } from "../domain/Board.ts";
@@ -38,6 +38,24 @@ export function simpleStubAsync<T>(
     object,
     method,
     returnsNext([Promise.resolve(returnNext)] as never),
+  );
+}
+
+interface AssertThrowsOptions {
+  shouldThrow: () => void;
+  catch: (error: Error) => void;
+}
+
+export function assertThrows(options: AssertThrowsOptions) {
+  try {
+    options.shouldThrow();
+  } catch (error) {
+    options.catch(error);
+    return;
+  }
+
+  throw new AssertionError(
+    "Expected this call to throw an error, it does NOT.",
   );
 }
 

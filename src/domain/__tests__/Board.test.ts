@@ -4,7 +4,9 @@ import {
 } from "https://deno.land/std@0.173.0/testing/mock.ts";
 import { assertEquals, assertSpyCall, describe, it } from "../../../deps.ts";
 import { Player } from "../../model/Player.ts";
+import { BoardError } from "../../util/BoardError.ts";
 import {
+  assertThrows,
   FakeMessenger,
   FakePiece,
   simpleStub,
@@ -90,17 +92,17 @@ describe("Board", () => {
       const board = new Board();
       const missingPlayer = [player1];
 
-      try {
-        board.init(missingPlayer);
-      } catch (error) {
-        assertEquals(
-          error.message,
-          `Cannot instantiate board without ${Rules.PLAYER_NUMBER} (from rule PLAYER_NUMBER) players.`,
-        );
-        return;
-      }
-
-      throw new Error("This line should not be executed");
+      assertThrows({
+        shouldThrow() {
+          board.init(missingPlayer);
+        },
+        catch(error) {
+          assertEquals(
+            error.message,
+            `Cannot instantiate board without ${Rules.PLAYER_NUMBER} (from rule PLAYER_NUMBER) players.`,
+          );
+        },
+      });
     });
   });
 
@@ -279,7 +281,7 @@ describe("Board", () => {
       const piece = new FakePiece();
       const positionX = 0;
       const positionY = 0;
-      const maxXRange = 1
+      const maxXRange = 1;
       const targetX = 2; // <-- we're trying to move 2 slots away
       const targetY = 0;
       const resolveMoveSpy = simpleStub(piece.actionZone, "resolveMove", [{
@@ -307,6 +309,129 @@ describe("Board", () => {
         assertSpyCall(resolveMoveSpy, 0, {
           args: [board.flattenedSlots, positionX, positionY],
         });
+      });
+    });
+  });
+
+  describe("isMovementInRevealedZone", () => {
+    it("should be truthy if targeted slot is in revealed zone", () => {
+      const board = new Board();
+      const piece = new FakePiece();
+      const positionX = 0;
+      const positionY = 0;
+      const targetX = 1;
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveReveal", [{
+        x: targetX,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", {
+        x: positionX,
+        y: positionY,
+        piece,
+      });
+
+      board.init(players);
+
+      const inBounds = board.isMovementInRevealedZone(
+        piece,
+        targetX,
+        targetY,
+      );
+
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
+        assertEquals(inBounds, true);
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCall(resolveMoveSpy, 0, {
+          args: [board.flattenedSlots, positionX, positionY],
+        });
+      });
+    });
+
+    it("should be falsy if piece slot cannot be retrieved", () => {
+      const board = new Board();
+      const piece = new FakePiece();
+      const targetX = 1;
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveReveal", [{
+        x: targetX,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", null);
+
+      board.init(players);
+
+      const inBounds = board.isMovementInRevealedZone(
+        piece,
+        targetX,
+        targetY,
+      );
+
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
+        assertEquals(inBounds, false);
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCalls(resolveMoveSpy, 0);
+      });
+    });
+
+    it("should be falsy if targeted slot is out of revealed zone", () => {
+      const board = new Board();
+      const piece = new FakePiece();
+      const positionX = 0;
+      const positionY = 0;
+      const maxXRange = 1;
+      const targetX = 2; // <-- we're trying to move 2 slots away
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveReveal", [{
+        x: maxXRange,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", {
+        x: positionX,
+        y: positionY,
+        piece,
+      });
+
+      board.init(players);
+
+      const inBounds = board.isMovementInRevealedZone(
+        piece,
+        targetX,
+        targetY,
+      );
+
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
+        assertEquals(inBounds, false);
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCall(resolveMoveSpy, 0, {
+          args: [board.flattenedSlots, positionX, positionY],
+        });
+      });
+    });
+  });
+
+  describe("getRevealedZoneForPiece", () => {
+    it("should throw if slot cannot be retrieved", () => {
+      const piece = new FakePiece();
+      const board = new Board();
+      board.init(players);
+      const getSlotSpy = simpleStub(board, "getPieceSlot", null);
+
+      assertThrows({
+        shouldThrow() {
+          board.getRevealedZoneForPiece(piece);
+        },
+        catch(error) {
+          assertEquals(error instanceof BoardError, true);
+          assertEquals(
+            error.message,
+            "Cannot get revealed zone for piece: piece slot not found",
+          );
+          assertSpyCall(getSlotSpy, 0, { args: [piece] });
+        },
       });
     });
   });
