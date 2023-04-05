@@ -28,7 +28,7 @@ export class Turn {
     });
   }
 
-  public end() {
+  public triggerNext() {
     this.lastMovedPiece = null;
     this.moveCount = 0;
     // TODO: this is wrong when a player has lost and player count > 2
@@ -50,7 +50,7 @@ export class Turn {
     this.lastMovedPiece = movedPiece || null;
 
     if (hasReachedMaxMove && !this.waitForKill) {
-      this.end();
+      this.triggerNext();
     }
   }
 

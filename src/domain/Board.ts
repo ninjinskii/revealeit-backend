@@ -389,7 +389,7 @@ export class Board {
 
     if (this.turn.waitForKill) {
       this.turn.waitForKill = false;
-      this.turn.end();
+      this.turn.triggerNext();
     }
 
     this.turn.checkLooseCondition();

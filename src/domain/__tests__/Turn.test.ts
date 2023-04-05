@@ -70,7 +70,7 @@ describe("Turn", () => {
     })
   })
 
-  describe("end", () => {
+  describe("triggerNext", () => {
     it("can end a turn and restart one", () => {
       const board = new Board()
       board.init(players)
@@ -78,7 +78,7 @@ describe("Turn", () => {
       const looseConditionSpy = simpleStub(turn, "checkLooseCondition", undefined)
       const startSpy = simpleStub(turn, "start", undefined)
   
-      turn.end()
+      turn.triggerNext()
   
       assertSpyCalls(looseConditionSpy, 1)
       assertSpyCalls(startSpy, 1)
@@ -107,17 +107,17 @@ describe("Turn", () => {
       board.init(players)
       const turn = new Turn(board)
       const killableSpy = multipleStub(board, "getKillableSlotsForPlayer", [[], []])
-      const endSpy = simpleStub(turn, "end", undefined)
+      const triggerNextSpy = simpleStub(turn, "triggerNext", undefined)
       const movingPiece1 = player1.pieces[0]
       const movingPiece2 = player1.pieces[1]
   
       turn.registerPlay(movingPiece1)
       turn.registerPlay(movingPiece2)
   
-      spyContext([killableSpy, endSpy], () => {
+      spyContext([killableSpy, triggerNextSpy], () => {
         assertSpyCall(killableSpy, 0, { args: [player1] })
         assertSpyCall(killableSpy, 1, { args: [player1] })
-        assertSpyCalls(endSpy, 1)
+        assertSpyCalls(triggerNextSpy, 1)
         assertEquals(turn["lastMovedPiece"], movingPiece2)
         assertEquals(turn["moveCount"], 2)
       })
@@ -128,17 +128,17 @@ describe("Turn", () => {
       board.init(players)
       const turn = new Turn(board)
       const killableSpy = multipleStub(board, "getKillableSlotsForPlayer", [[], [{ x: 1, y: 1, piece: player2.pieces[0] }]])
-      const endSpy = simpleStub(turn, "end", undefined)
+      const triggerNextSpy = simpleStub(turn, "triggerNext", undefined)
       const movingPiece1 = player1.pieces[0]
       const movingPiece2 = player1.pieces[1]
   
       turn.registerPlay(movingPiece1)
       turn.registerPlay(movingPiece2)
   
-      spyContext([killableSpy, endSpy], () => {
+      spyContext([killableSpy, triggerNextSpy], () => {
         assertSpyCall(killableSpy, 0, { args: [player1] })
         assertSpyCall(killableSpy, 1, { args: [player1] })
-        assertSpyCalls(endSpy, 0)
+        assertSpyCalls(triggerNextSpy, 0)
         assertEquals(turn["lastMovedPiece"], movingPiece2)
         assertEquals(turn["moveCount"], 2)
       })
