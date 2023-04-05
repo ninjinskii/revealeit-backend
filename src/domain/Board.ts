@@ -86,7 +86,7 @@ export class Board {
   }
 
   isSlotInBoard(x: number, y: number): boolean {
-    return this.slots[y][x] !== undefined;
+    return this.slots[y] !== undefined && this.slots[y][x] !== undefined;
   }
 
   getSlot(x: number, y: number) {

@@ -55,7 +55,7 @@ export class Rules {
   ];
 
   static ensureCorrectBoardSize(board: Board) {
-    const slotCount = board.slots.flat(1).length;
+    const slotCount = board.flattenedSlots.length;
 
     if (slotCount !== Rules.BOARD_SIZE * Rules.BOARD_SIZE) {
       throw new Error(
