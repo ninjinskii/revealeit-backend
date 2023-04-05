@@ -2,12 +2,7 @@ import {
   assertSpyCalls,
   spy,
 } from "https://deno.land/std@0.173.0/testing/mock.ts";
-import {
-  assertEquals,
-  assertSpyCall,
-  describe,
-  it,
-} from "../../../deps.ts";
+import { assertEquals, assertSpyCall, describe, it } from "../../../deps.ts";
 import { Player } from "../../model/Player.ts";
 import {
   FakeMessenger,
@@ -162,17 +157,6 @@ describe("Board", () => {
     });
   });
 
-  describe("getDistance", () => {
-    it("should get distance", () => {
-      const board = new Board();
-      board.init(players);
-
-      const distance = board.getDistance(0, 0, 2, 0);
-
-      assertEquals(distance, 2);
-    });
-  });
-
   describe("isSlotEmpty", () => {
     it("should be truthy if slot is empty", () => {
       const board = new Board();
@@ -231,73 +215,98 @@ describe("Board", () => {
     it("should be truthy if distance is in bounds", () => {
       const board = new Board();
       const piece = new FakePiece();
-      const distanceSpy = simpleStub(board, "getDistance", 1);
-      const pieceLocationSpy = simpleStub(board, "getPieceLocation", {
-        x: 0,
-        y: 0,
+      const positionX = 0;
+      const positionY = 0;
+      const targetX = 1;
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveMove", [{
+        x: targetX,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", {
+        x: positionX,
+        y: positionY,
+        piece,
       });
+
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(piece, 1, 0);
+      const inBounds = board.isMovementDistanceInBounds(
+        piece,
+        targetX,
+        targetY,
+      );
 
-      spyContext([pieceLocationSpy, distanceSpy], () => {
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
         assertEquals(inBounds, true);
-        assertSpyCall(pieceLocationSpy, 0, { args: [piece] });
-        assertSpyCall(distanceSpy, 0, { args: [0, 0, 1, 0] });
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCall(resolveMoveSpy, 0, {
+          args: [board.flattenedSlots, positionX, positionY],
+        });
       });
     });
 
-    it("should be falsy if piece location cannot be retrieved", () => {
+    it("should be falsy if piece slot cannot be retrieved", () => {
       const board = new Board();
       const piece = new FakePiece();
-      const pieceLocationSpy = simpleStub(board, "getPieceLocation", null);
-      const distanceSpy = simpleStub(board, "getDistance", 1);
+      const targetX = 1;
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveMove", [{
+        x: targetX,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", null);
+
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(piece, 1, 0);
+      const inBounds = board.isMovementDistanceInBounds(
+        piece,
+        targetX,
+        targetY,
+      );
 
-      spyContext([pieceLocationSpy, distanceSpy], () => {
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
         assertEquals(inBounds, false);
-        assertSpyCall(pieceLocationSpy, 0, { args: [piece] });
-        assertSpyCalls(distanceSpy, 0);
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCalls(resolveMoveSpy, 0);
       });
     });
 
     it("should be falsy if distance is out of bounds", () => {
       const board = new Board();
       const piece = new FakePiece();
-      const distanceSpy = simpleStub(board, "getDistance", 2);
-      const pieceLocationSpy = simpleStub(board, "getPieceLocation", {
-        x: 0,
-        y: 0,
+      const positionX = 0;
+      const positionY = 0;
+      const maxXRange = 1
+      const targetX = 2; // <-- we're trying to move 2 slots away
+      const targetY = 0;
+      const resolveMoveSpy = simpleStub(piece.actionZone, "resolveMove", [{
+        x: maxXRange,
+        y: targetY,
+      }]);
+
+      const pieceSlotSpy = simpleStub(board, "getPieceSlot", {
+        x: positionX,
+        y: positionY,
+        piece,
       });
+
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(piece, 2, 0);
+      const inBounds = board.isMovementDistanceInBounds(
+        piece,
+        targetX,
+        targetY,
+      );
 
-      spyContext([pieceLocationSpy, distanceSpy], () => {
+      spyContext([pieceSlotSpy, resolveMoveSpy], () => {
         assertEquals(inBounds, false);
-        assertSpyCall(pieceLocationSpy, 0, { args: [piece] });
-        assertSpyCall(distanceSpy, 0, { args: [0, 0, 2, 0] });
-      });
-    });
-
-    it("should be falsy if distance is lower than 0", () => {
-      const board = new Board();
-      const piece = new FakePiece();
-      const distanceSpy = simpleStub(board, "getDistance", -1);
-      const pieceLocationSpy = simpleStub(board, "getPieceLocation", {
-        x: 0,
-        y: 0,
-      });
-      board.init(players);
-
-      const inBounds = board.isMovementDistanceInBounds(piece, 1, 0);
-
-      spyContext([pieceLocationSpy, distanceSpy], () => {
-        assertEquals(inBounds, false);
-        assertSpyCall(pieceLocationSpy, 0, { args: [piece] });
-        assertSpyCall(distanceSpy, 0, { args: [0, 0, 1, 0] });
+        assertSpyCall(pieceSlotSpy, 0, { args: [piece] });
+        assertSpyCall(resolveMoveSpy, 0, {
+          args: [board.flattenedSlots, positionX, positionY],
+        });
       });
     });
   });

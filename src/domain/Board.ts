@@ -77,10 +77,6 @@ export class Board {
     return this.players.map((player) => player.pieces).flat(1);
   }
 
-  getDistance(x1: number, y1: number, x2: number, y2: number) {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  }
-
   isSlotEmpty(x: number, y: number): boolean {
     return this.slots[y][x].piece === null;
   }
@@ -98,14 +94,21 @@ export class Board {
     targetX: number,
     targetY: number,
   ): boolean {
-    const location = this.getPieceLocation(piece);
+    const slot = this.getPieceSlot(piece);
 
-    if (!location) {
+    if (!slot) {
       return false;
     }
 
-    const distance = this.getDistance(location.x, location.y, targetX, targetY);
-    return distance > 0 && distance <= piece.actionZone.moveRange;
+    const moveZone = piece.actionZone.resolveMove(
+      this.flattenedSlots,
+      slot.x,
+      slot.y,
+    );
+
+    return moveZone.filter((slot) =>
+      slot.x === targetX && slot.y === targetY
+    ).length > 0;
   }
 
   isMovementInRevealedZone(
