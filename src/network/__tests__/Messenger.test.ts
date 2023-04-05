@@ -24,76 +24,86 @@ describe("WebSocketMessenger", () => {
     assertSpyCalls(gameStartSpy, 0)
   })
 
-  it("can send a message", () => {
-    const gameStartSpy = spy()
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
-    const fakeMessage = new FakeSendableMessage()
-    const prepareSpy = simpleStub(fakeMessage, "prepare", fakeMessage)
-    const buildSpy = simpleStub(fakeMessage, "build", "fakemessage")
+  describe("sendMessage", () => {
+    it("can send a message", () => {
+      const gameStartSpy = spy()
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
+      const fakeMessage = new FakeSendableMessage()
+      const prepareSpy = simpleStub(fakeMessage, "prepare", fakeMessage)
+      const buildSpy = simpleStub(fakeMessage, "build", "fakemessage")
 
-    messenger.sendMessage(fakeMessage)
+      messenger.sendMessage(fakeMessage)
 
-    assertSpyCalls(prepareSpy, 1)
-    assertSpyCalls(buildSpy, 1)
-    assertSpyCall(sendSpy, 0, { args: ["fakemessage"] })
-    assertSpyCalls(gameStartSpy, 0)
+      assertSpyCalls(prepareSpy, 1)
+      assertSpyCalls(buildSpy, 1)
+      assertSpyCall(sendSpy, 0, { args: ["fakemessage"] })
+      assertSpyCalls(gameStartSpy, 0)
+    })
   })
 
-  it("can stop communication", () => {
-    const gameStartSpy = spy()
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
-
-    messenger.endCommunication()
-
-    assertSpyCall(closeSpy, 0, { args: [Constants.WEB_SOCKET_CLOSE_END_GAME_CODE] })
+  describe("endCommunication", () => {
+    it("can stop communication", () => {
+      const gameStartSpy = spy()
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
+  
+      messenger.endCommunication()
+  
+      assertSpyCall(closeSpy, 0, { args: [Constants.WEB_SOCKET_CLOSE_END_GAME_CODE] })
+    })
   })
 
-  it("should accept a close listener", () => {
-    const closeListener = () => {}
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], closeListener)
-    assertEquals(messenger["onCloseListener"], undefined)
-
-    messenger.setOnClosedListener(closeListener)
-
-    assertEquals(messenger["onCloseListener"], closeListener)
+  describe("setOnClosedListener", () => {
+    it("should accept a close listener", () => {
+      const closeListener = () => {}
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], closeListener)
+      assertEquals(messenger["onCloseListener"], undefined)
+  
+      messenger.setOnClosedListener(closeListener)
+  
+      assertEquals(messenger["onCloseListener"], closeListener)
+    })
   })
 
-  it("should handle message", () => {
-    const gameStartSpy = spy()
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
-    const fakeMessage = new FakeReceiveableMessage("", "")
-    const executeSpy = simpleStub(fakeMessage, "execute", undefined)
-    const receiveSpy = simpleStub(messenger, "receiveMessage", fakeMessage)
-
-    messenger["onMessage"]("message")
-
-    assertSpyCall(receiveSpy, 0, { args: ["message"] })
-    assertSpyCalls(executeSpy, 1)
+  describe("onMessage", () => {
+    it("should handle message", () => {
+      const gameStartSpy = spy()
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
+      const fakeMessage = new FakeReceiveableMessage("", "")
+      const executeSpy = simpleStub(fakeMessage, "execute", undefined)
+      const receiveSpy = simpleStub(messenger, "receiveMessage", fakeMessage)
+  
+      messenger["onMessage"]("message")
+  
+      assertSpyCall(receiveSpy, 0, { args: ["message"] })
+      assertSpyCalls(executeSpy, 1)
+    })
+  
+    it("should handle error when parsing message", () => {
+      const gameStartSpy = spy()
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
+      const fakeMessage = new FakeReceiveableMessage("", "")
+      const executeSpy = simpleStub(fakeMessage, "execute", undefined)
+      const receiveSpy = simpleStub(messenger, "receiveMessage", () => { throw new Error() })
+      const errorSpy = simpleStub(messenger["errorHandler"], "registerError", undefined)
+  
+      messenger["onMessage"]("message")
+  
+      assertSpyCall(receiveSpy, 0, { args: ["message"] })
+      assertSpyCalls(executeSpy, 0)
+      assertSpyCalls(errorSpy, 1)
+    })
   })
 
-  it("should handle error when parsing message", () => {
-    const gameStartSpy = spy()
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
-    const fakeMessage = new FakeReceiveableMessage("", "")
-    const executeSpy = simpleStub(fakeMessage, "execute", undefined)
-    const receiveSpy = simpleStub(messenger, "receiveMessage", () => { throw new Error() })
-    const errorSpy = simpleStub(messenger["errorHandler"], "registerError", undefined)
-
-    messenger["onMessage"]("message")
-
-    assertSpyCall(receiveSpy, 0, { args: ["message"] })
-    assertSpyCalls(executeSpy, 0)
-    assertSpyCalls(errorSpy, 1)
-  })
-
-  it("should call close listener when socket is closed", () => {
-    const gameStartSpy = spy()
-    const onCloseListener = spy()
-    const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
-    messenger.setOnClosedListener(onCloseListener)
-
-    messenger["onClose"](666)
-
-    assertSpyCall(onCloseListener, 0, { args: [666] })
+  describe("onClose", () => {
+    it("should call close listener when socket is closed", () => {
+      const gameStartSpy = spy()
+      const onCloseListener = spy()
+      const messenger = new WebSocketMessenger(fakeWebSocket, undefined, [], gameStartSpy)
+      messenger.setOnClosedListener(onCloseListener)
+  
+      messenger["onClose"](666)
+  
+      assertSpyCall(onCloseListener, 0, { args: [666] })
+    })
   })
 })
