@@ -36,4 +36,4 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: revealeit-backend
-          entrypoint: main.ts
+          entrypoint: src/main.ts
