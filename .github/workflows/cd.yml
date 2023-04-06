@@ -19,7 +19,7 @@ jobs:
           deno-version: v1.x
 
       - name: Tests
-        run: deno test
+        run: deno test --allow-env
 
   deploy:
     runs-on: ubuntu-22.04
@@ -35,5 +35,5 @@ jobs:
       - name: Deploy to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: revealeit-backend # the name of the project on Deno Deploy
+          project: revealeit-backend
           entrypoint: main.ts
