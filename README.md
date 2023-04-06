@@ -2,6 +2,7 @@
 Revealeit server hosting a single game between multiple players.
 
 ## Release process
+- Merger target code in master
 - Create a tag named `x.x.x`
 - Push tag
 
