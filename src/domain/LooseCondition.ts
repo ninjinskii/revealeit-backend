@@ -20,7 +20,7 @@ export class NoMoreKillerLooseCondition implements LooseCondition {
   hasLost(_board: Board, currentPlayer: Player): boolean {
     return currentPlayer.pieces.find((piece) =>
       piece.actionZone.killRange > 0
-    ) !== undefined;
+    ) === undefined;
   }
 }
 

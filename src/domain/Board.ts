@@ -19,6 +19,8 @@ export class Board {
 
   init(players: Player[]) {
     this.players = players;
+    this.slots = [];
+    this.flattenedSlots = [];
 
     Rules.ensureCorrectPlayerCount(this);
 
@@ -77,38 +79,40 @@ export class Board {
     return this.players.map((player) => player.pieces).flat(1);
   }
 
-  getDistance(x1: number, y1: number, x2: number, y2: number) {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  }
-
   isSlotEmpty(x: number, y: number): boolean {
     return this.slots[y][x].piece === null;
   }
 
   isSlotInBoard(x: number, y: number): boolean {
-    return this.slots[y][x] !== undefined;
+    return this.slots[y] !== undefined && this.slots[y][x] !== undefined;
   }
 
   getSlot(x: number, y: number) {
     return this.slots[y][x];
   }
 
-  isMovementDistanceInBounds(
+  isSlotDistanceInBounds(
     piece: Piece,
     targetX: number,
     targetY: number,
   ): boolean {
-    const location = this.getPieceLocation(piece);
+    const slot = this.getPieceSlot(piece);
 
-    if (!location) {
+    if (!slot) {
       return false;
     }
 
-    const distance = this.getDistance(location.x, location.y, targetX, targetY);
-    return distance > 0 && distance <= piece.actionZone.moveRange;
+    const moveZone = piece.actionZone.resolveMove(
+      this.flattenedSlots,
+      slot.x,
+      slot.y,
+    );
+
+    return moveZone.filter((slot) => slot.x === targetX && slot.y === targetY)
+      .length > 0;
   }
 
-  isMovementInRevealedZone(
+  isSlotInRevealedZone(
     piece: Piece,
     targetX: number,
     targetY: number,
@@ -137,7 +141,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot get revealed zone for piece: piece slot not found",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -183,7 +187,7 @@ export class Board {
         throw new BoardError({
           rawMessage: "Cannot get killable pieces: piece slot not found",
           httpCode: 500,
-          clientTranslationKey: "error__base"
+          clientTranslationKey: "error__base",
         });
       }
 
@@ -212,7 +216,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: max play count reached, waiting for a kill",
         httpCode: 400,
-        clientTranslationKey: "error__waiting_for_kill"
+        clientTranslationKey: "error__waiting_for_kill",
       });
     }
 
@@ -220,7 +224,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: mover not found",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -228,7 +232,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: piece already moved this turn",
         httpCode: 400,
-        clientTranslationKey: "error__piece_already_moved"
+        clientTranslationKey: "error__piece_already_moved",
       });
     }
 
@@ -236,9 +240,10 @@ export class Board {
 
     if (!player) {
       throw new BoardError({
-        rawMessage: "Cannot move: player associated with moving piece does not exists",
+        rawMessage:
+          "Cannot move: player associated with moving piece does not exists",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -246,7 +251,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: wait for player turn",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -254,23 +259,23 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: slot is outside the board",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
-    if (!this.isMovementDistanceInBounds(piece, targetX, targetY)) {
+    if (!this.isSlotDistanceInBounds(piece, targetX, targetY)) {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move too fast",
         httpCode: 400,
-        clientTranslationKey: "error__move_range_outreached"
+        clientTranslationKey: "error__move_range_outreached",
       });
     }
 
-    if (!this.isMovementInRevealedZone(piece, targetX, targetY)) {
+    if (!this.isSlotInRevealedZone(piece, targetX, targetY)) {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move outside piece's revealed zone",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -278,7 +283,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: slot is already taken",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -288,7 +293,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: cannot retrieve piece location",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -306,7 +311,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot move: wait for player turn",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -318,7 +323,7 @@ export class Board {
       throw new BoardError({
         rawMessage: `Cannot kill: ${player.id} cannot kill piece at ${x},${y}`,
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -326,7 +331,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: slot is outside the board",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -334,27 +339,26 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: nothing to kill here",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
-    const victimSlot = this.slots[y][x];
-    const victim = victimSlot.piece;
+    const victimSlot = this.getSlot(x, y);
+    const victim = victimSlot?.piece;
 
     if (!victim) {
       throw new BoardError({
         rawMessage: "Cannot kill: unable to find targeted piece",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
-    if (!this.isMovementInRevealedZone(victim, x, y)) {
-      // needs test
+    if (!this.isSlotInRevealedZone(victim, x, y)) {
       throw new BoardError({
         rawMessage: "Cannot kill: trying to kill outside piece's revealed zone",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -362,7 +366,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: trying to kill own piece",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -374,7 +378,7 @@ export class Board {
       throw new BoardError({
         rawMessage: "Cannot kill: unable to find targeted player",
         httpCode: 500,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
@@ -389,7 +393,9 @@ export class Board {
 
     if (this.turn.waitForKill) {
       this.turn.waitForKill = false;
-      this.turn.end();
+      this.turn.triggerNext();
+      this.broadcastBoardUpdate();
+      return;
     }
 
     this.turn.checkLooseCondition();
@@ -400,8 +406,11 @@ export class Board {
     return this.turn.getCurrentPlayer().id === player.id;
   }
 
+  getPlayerById(id: string) {
+    return this.players.find((player) => player.id === id);
+  }
+
   onPlayerLost(player: Player) {
-    player.hasLost = true;
     player.pieces = [];
   }
 
@@ -414,8 +423,14 @@ export class Board {
 
   broadcastPlayersUpdate() {
     this.players.forEach((player) => {
-      const message = new PlayersMessage(this)
-      player.messenger.sendMessage(message)
+      const message = new PlayersMessage(this);
+      player.messenger.sendMessage(message);
     });
+  }
+
+  reset() {
+    this.players = [];
+    this.slots = [];
+    this.flattenedSlots = [];
   }
 }

@@ -9,13 +9,13 @@ import {
   SendableMessage,
 } from "./Message.ts";
 import { WebSocketClient } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
-import { Board } from "../domain/Board.ts";
 import { LogAndPushErrorHandler } from "../util/BoardErrorHandler.ts";
+import { Board } from "../domain/Board.ts";
 
 export abstract class Messenger {
   constructor(
     private players: Player[],
-    private onGameStarted: () => void,
+    private startGame: () => void,
   ) {}
 
   abstract sendMessage(message: SendableMessage): void;
@@ -29,16 +29,15 @@ export abstract class Messenger {
 
     switch (key) {
       case MessageType.MOVE:
-        return new MoveMessage(key, content);
+        return new MoveMessage(content);
       case MessageType.KILL:
-        return new KillMessage(key, content);
+        return new KillMessage(content);
       case MessageType.HANDSHAKE:
         return new HandshakeMessage(
-          key,
           content,
           this,
           this.players,
-          this.onGameStarted,
+          this.startGame,
         );
       default:
         throw new Error(`Cannot parse message: key was '${key}'`);
@@ -52,30 +51,15 @@ export class WebSocketMessenger extends Messenger {
 
   constructor(
     private webSocket: WebSocketClient,
-    private board: Board | undefined,
+    private board: Board,
     waitingPlayers: Player[],
-    onGameStarted: () => void,
+    startGame: () => void,
   ) {
-    super(waitingPlayers, onGameStarted);
+    super(waitingPlayers, startGame);
 
-    webSocket.on(
-      "message",
-      (rawMessage: string) => {
-        try {
-          this.receiveMessage(rawMessage).execute(board);
-        } catch (error) {
-          this.errorHandler.registerError(error);
-        }
-      },
-    );
-
-    webSocket.on("error", () => {
-      console.log("socket error");
-    });
-
-    webSocket.on("close", (code: number) => {
-      this.onCloseListener?.call(this, code);
-    });
+    webSocket.on("message", this.onMessage.bind(this));
+    webSocket.on("error", this.onError.bind(this));
+    webSocket.on("close", this.onClose.bind(this));
   }
 
   isClosed(): boolean {
@@ -93,5 +77,21 @@ export class WebSocketMessenger extends Messenger {
 
   setOnClosedListener(listener: (closeCode: number) => void): void {
     this.onCloseListener = listener;
+  }
+
+  private onMessage(rawMessage: string) {
+    try {
+      this.receiveMessage(rawMessage).execute(this.board);
+    } catch (error) {
+      this.errorHandler.registerError(error);
+    }
+  }
+
+  private onClose(code: number) {
+    this.onCloseListener?.call(this, code);
+  }
+
+  private onError() {
+    console.log("socket error");
   }
 }

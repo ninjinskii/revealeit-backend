@@ -25,12 +25,13 @@ serverWebSocket.on(
 );
 
 function startGame() {
+  board.reset();
   board.init([...players]);
   players.length = 0;
 }
 
 function checkResetGame(closeCode: number) {
-  const everybodyHasQuit = board &&
+  const everybodyHasQuit = board.players.length &&
     board.players.every((player) => player.messenger.isClosed());
   const clientRequestGameToEnd =
     closeCode === Constants.WEB_SOCKET_CLOSE_END_GAME_CODE;
@@ -46,5 +47,5 @@ function resetGame() {
     .forEach((player) => player.messenger.endCommunication());
 
   players.length = 0;
-  board.players.length = 0;
+  board.reset();
 }

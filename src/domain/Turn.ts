@@ -2,7 +2,10 @@ import { Board } from "./Board.ts";
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
 import { Rules } from "../domain/Rules.ts";
-import { LooseConditionFactory } from "./LooseCondition.ts";
+import {
+  LooseConditionDescriptor,
+  LooseConditionFactory,
+} from "./LooseCondition.ts";
 import {
   LostMessage,
   PlayersMessage,
@@ -12,7 +15,7 @@ import {
 export class Turn {
   private currentPlayerPosition = 0;
   private moveCount = 0;
-  private lastMovedPiece: Piece | null = null;
+  private lastMovedPiece: Piece | null = null; // TODO: rename to movedPieces en tableau pour gérer le scénario plus de deux pièces / joueur
   public waitForKill = false;
 
   constructor(private board: Board) {}
@@ -28,7 +31,7 @@ export class Turn {
     });
   }
 
-  public end() {
+  public triggerNext() {
     this.lastMovedPiece = null;
     this.moveCount = 0;
     // TODO: this is wrong when a player has lost and player count > 2
@@ -39,10 +42,10 @@ export class Turn {
     this.start();
   }
 
-  public registerPlay(movedPiece?: Piece | undefined) {
-    const playerPiecesCount = this.getCurrentPlayer().pieces.length;
-    const hasReachedMaxMove = ++this.moveCount === playerPiecesCount;
+  public registerPlay(movedPiece?: Piece) {
     const player = this.getCurrentPlayer();
+    const playerPiecesCount = player.pieces.length;
+    const hasReachedMaxMove = ++this.moveCount === playerPiecesCount;
     const killAvailables =
       this.board.getKillableSlotsForPlayer(player).length > 0;
     this.waitForKill = hasReachedMaxMove && killAvailables;
@@ -50,14 +53,17 @@ export class Turn {
     this.lastMovedPiece = movedPiece || null;
 
     if (hasReachedMaxMove && !this.waitForKill) {
-      this.end();
+      this.triggerNext();
     }
   }
 
   public checkLooseCondition() {
-    const looseConditionDescriptor = Rules.LOOSE_CONDITION
-    const looseCondition = 
-      LooseConditionFactory.getLooseCondition(looseConditionDescriptor);
+    const looseConditionDescriptor = Rules
+      .LOOSE_CONDITION as LooseConditionDescriptor;
+
+    const looseCondition = LooseConditionFactory.getLooseCondition(
+      looseConditionDescriptor,
+    );
 
     const looser = this.board.players.find((player) =>
       looseCondition.hasLost(this.board, player)
@@ -73,9 +79,8 @@ export class Turn {
     looser.messenger.sendMessage(lostMessage);
 
     this.board.onPlayerLost(looser);
+    this.board.broadcastBoardUpdate(); // Vraiment obligé de broadcast dans le for each ?
     this.board.players.forEach((player) => {
-      this.board.broadcastBoardUpdate();
-
       const playersMessage = new PlayersMessage(this.board);
       player.messenger.sendMessage(playersMessage);
     });

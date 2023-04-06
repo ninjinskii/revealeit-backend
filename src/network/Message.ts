@@ -34,20 +34,17 @@ export abstract class ReceiveableMessage extends Message {
 
 export class HandshakeMessage extends ReceiveableMessage {
   constructor(
-    key: string,
     protected content: string,
     private messenger: Messenger,
     private waitingPlayers: Player[],
-    private onGameStarted: () => void,
+    private startGame: () => void,
   ) {
-    super(key, content);
+    super(MessageType.HANDSHAKE, content);
   }
 
   execute(board?: Board) {
     const [playerId, playerName] = this.content.split(",");
-    const inGamePlayer = board?.players.find((player) =>
-      player.id === playerId
-    );
+    const inGamePlayer = board?.getPlayerById(playerId)
     const waitingPlayer = this.waitingPlayers.find((player) =>
       player.id === playerId
     );
@@ -73,7 +70,7 @@ export class HandshakeMessage extends ReceiveableMessage {
       const shouldStartGame = waitingPlayerCount + 1 === Rules.PLAYER_NUMBER;
 
       if (shouldStartGame) {
-        this.onGameStarted();
+        this.startGame();
       }
     } else if (inGamePlayer) {
       inGamePlayer.messenger = this.messenger;
@@ -92,8 +89,8 @@ export class HandshakeMessage extends ReceiveableMessage {
 }
 
 export class MoveMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string) {
-    super(key, content);
+  constructor(protected content: string) {
+    super(MessageType.MOVE, content);
   }
 
   execute(board?: Board) {
@@ -101,41 +98,41 @@ export class MoveMessage extends ReceiveableMessage {
       throw new BoardError({
         rawMessage: "Cannot move: game hasn't started yet",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
-    const [fromX, fromY, toY, toX] = this.content.split(",").map((value) =>
+    const [fromX, fromY, toX, toY] = this.content.split(",").map((value) =>
       parseInt(value)
     );
     const slot = board.getSlot(fromX, fromY);
 
-    board.movePieceTo(slot.piece, toY, toX);
+    board.movePieceTo(slot.piece, toX, toY);
   }
 }
 
 export class KillMessage extends ReceiveableMessage {
-  constructor(key: string, protected content: string) {
-    super(key, content);
+  constructor(protected content: string) {
+    super(MessageType.KILL, content);
   }
 
   execute(board?: Board) {
     if (!board) {
       throw new BoardError({
-        rawMessage: "Cannot move: game hasn't started yet",
+        rawMessage: "Cannot kill: game hasn't started yet",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 
     const [playerId, toX, toY] = this.content.split(",");
-    const player = board.players.find((player) => player.id === playerId);
+    const player = board.getPlayerById(playerId);
 
     if (!player) {
       throw new BoardError({
-        rawMessage: "Cannot kill piece: killer player not found",
+        rawMessage: "Cannot kill: killer player not found",
         httpCode: 400,
-        clientTranslationKey: "error__base"
+        clientTranslationKey: "error__base",
       });
     }
 

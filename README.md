@@ -13,6 +13,13 @@ docker compose up -d
 ```
 
 Server is only accepting Websocket connections, so you can't acces it using your browser.
+Websocket url is: `ws://revealeit-backend.njk.localhost:5000/`
+
+## Run unit tests
+```bash
+docker-compose up -d
+docker-compose exec server deno test --allow-env
+```
 
 ## Revealeit rules
 The game is conceived to be adaptable using the `Rules` class.
