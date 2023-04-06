@@ -37,16 +37,14 @@ export class HandshakeMessage extends ReceiveableMessage {
     protected content: string,
     private messenger: Messenger,
     private waitingPlayers: Player[],
-    private onGameStarted: () => void,
+    private startGame: () => void,
   ) {
     super(MessageType.HANDSHAKE, content);
   }
 
   execute(board?: Board) {
     const [playerId, playerName] = this.content.split(",");
-    const inGamePlayer = board?.players.find((player) =>
-      player.id === playerId
-    );
+    const inGamePlayer = board?.getPlayerById(playerId)
     const waitingPlayer = this.waitingPlayers.find((player) =>
       player.id === playerId
     );
@@ -72,7 +70,7 @@ export class HandshakeMessage extends ReceiveableMessage {
       const shouldStartGame = waitingPlayerCount + 1 === Rules.PLAYER_NUMBER;
 
       if (shouldStartGame) {
-        this.onGameStarted();
+        this.startGame();
       }
     } else if (inGamePlayer) {
       inGamePlayer.messenger = this.messenger;
@@ -128,7 +126,7 @@ export class KillMessage extends ReceiveableMessage {
     }
 
     const [playerId, toX, toY] = this.content.split(",");
-    const player = board.players.find((player) => player.id === playerId);
+    const player = board.getPlayerById(playerId);
 
     if (!player) {
       throw new BoardError({

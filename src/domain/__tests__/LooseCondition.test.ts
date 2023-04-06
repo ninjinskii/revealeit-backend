@@ -4,9 +4,9 @@ import {
   NoMoreKillerLooseCondition,
   NoMorePieceLooseCondition,
 } from "../LooseCondition.ts";
-import { Rules } from "../../domain/Rules.ts";
 import { Board } from "../../domain/Board.ts";
 import { Player } from "../../model/Player.ts";
+import { Explorer, Shooter } from "../../model/Piece.ts";
 
 describe("LooseCondition", () => {
   let player = new Player({
@@ -18,7 +18,7 @@ describe("LooseCondition", () => {
       xModifier: 1,
       yModifier: 1,
     },
-    pieces: Rules.PLAYER_PIECES_GENERATOR("1"),
+    pieces: [new Explorer("player1"), new Shooter("player1")],
     messenger: new FakeMessenger([], () => {}),
   });
 
@@ -32,7 +32,7 @@ describe("LooseCondition", () => {
         xModifier: 1,
         yModifier: 1,
       },
-      pieces: Rules.PLAYER_PIECES_GENERATOR("1"),
+      pieces: [new Explorer("player2"), new Shooter("player2")],
       messenger: new FakeMessenger([], () => {}),
     });
   });

@@ -15,7 +15,7 @@ import {
 export class Turn {
   private currentPlayerPosition = 0;
   private moveCount = 0;
-  private lastMovedPiece: Piece | null = null;
+  private lastMovedPiece: Piece | null = null; // TODO: rename to movedPieces en tableau pour gérer le scénario plus de deux pièces / joueur
   public waitForKill = false;
 
   constructor(private board: Board) {}

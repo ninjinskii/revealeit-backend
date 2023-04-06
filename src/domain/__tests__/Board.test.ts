@@ -226,7 +226,7 @@ describe("Board", () => {
     });
   });
 
-  describe("isMovementDistanceInBounds", () => {
+  describe("isSlotDistanceInBounds", () => {
     it("should be truthy if distance is in bounds", () => {
       const board = new Board();
       const piece = new FakePiece();
@@ -247,7 +247,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(
+      const inBounds = board.isSlotDistanceInBounds(
         piece,
         targetX,
         targetY,
@@ -276,7 +276,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(
+      const inBounds = board.isSlotDistanceInBounds(
         piece,
         targetX,
         targetY,
@@ -310,7 +310,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementDistanceInBounds(
+      const inBounds = board.isSlotDistanceInBounds(
         piece,
         targetX,
         targetY,
@@ -326,7 +326,7 @@ describe("Board", () => {
     });
   });
 
-  describe("isMovementInRevealedZone", () => {
+  describe("isSlotInRevealedZone", () => {
     it("should be truthy if targeted slot is in revealed zone", () => {
       const board = new Board();
       const piece = new FakePiece();
@@ -347,7 +347,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementInRevealedZone(
+      const inBounds = board.isSlotInRevealedZone(
         piece,
         targetX,
         targetY,
@@ -376,7 +376,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementInRevealedZone(
+      const inBounds = board.isSlotInRevealedZone(
         piece,
         targetX,
         targetY,
@@ -410,7 +410,7 @@ describe("Board", () => {
 
       board.init(players);
 
-      const inBounds = board.isMovementInRevealedZone(
+      const inBounds = board.isSlotInRevealedZone(
         piece,
         targetX,
         targetY,
@@ -628,6 +628,62 @@ describe("Board", () => {
       });
     });
 
+    it("can get killable slots for player from multiple killers", () => {
+      const board = new Board();
+      board.init(players);
+      const killer2 = new Shooter("player1");
+      const killer1 = player1.pieces[1];
+      const victim = player2.pieces[0];
+      const victim2 = player2.pieces[1];
+      const targetSlot1 = { x: 1, y: 2, piece: victim };
+      const targetSlot2 = { x: 1, y: 3, piece: victim2 };
+      const revealedZone = [
+        { x: 1, y: 1, piece: null },
+        targetSlot1,
+        targetSlot2,
+      ];
+      const killZone1 = [targetSlot1];
+      const killZone2 = [targetSlot2];
+      const playerRevealedSlotsSpy = simpleStub(
+        board,
+        "getRevealedZoneForPlayer",
+        revealedZone,
+      );
+
+      const getSlotSpy = multipleStub(board, "getPieceSlot", [
+        { x: 0, y: 1, piece: killer1 },
+        { x: 1, y: 1, piece: killer2 },
+      ]);
+
+      const resolveKill1Spy = simpleStub(
+        killer1.actionZone,
+        "resolveKill",
+        killZone1,
+      );
+
+      const resolveKill2Spy = simpleStub(
+        killer2.actionZone,
+        "resolveKill",
+        killZone2,
+      );
+
+      player1.pieces.push(killer2);
+      const killableZone = board.getKillableSlotsForPlayer(player1);
+
+      spyContext([playerRevealedSlotsSpy, getSlotSpy, resolveKill1Spy], () => {
+        assertSpyCall(playerRevealedSlotsSpy, 0, { args: [player1] });
+        assertSpyCall(getSlotSpy, 0, { args: [killer1] });
+        assertSpyCall(getSlotSpy, 1, { args: [killer2] });
+        assertSpyCall(resolveKill1Spy, 0, {
+          args: [board.flattenedSlots, 0, 1],
+        });
+        assertSpyCall(resolveKill2Spy, 0, {
+          args: [board.flattenedSlots, 1, 1],
+        });
+        assertEquals(killableZone, [...killZone1, ...killZone2]);
+      });
+    });
+
     it("should be empty if player has no more killer", () => {
       const board = new Board();
       board.init(players);
@@ -680,7 +736,7 @@ describe("Board", () => {
               "Cannot get killable pieces: piece slot not found",
             );
             assertSpyCall(playerRevealedSlotsSpy, 0, { args: [player1] });
-            assertSpyCall(getSlotSpy, 0, { args: [killer]});
+            assertSpyCall(getSlotSpy, 0, { args: [killer] });
           });
         },
       });
@@ -796,6 +852,311 @@ describe("Board", () => {
           args: [board.flattenedSlots, 0, 1],
         });
         assertEquals(killableZone, []);
+      });
+    });
+  });
+
+  describe("getPieceLocation", () => {
+    it("can get location of a piece", () => {
+      const piece = player1.pieces[0];
+      const board = new Board();
+      board.init(players);
+      board.flattenedSlots = [{ x: 0, y: 0, piece }];
+
+      const location = board.getPieceLocation(piece);
+
+      assertEquals(location, { x: 0, y: 0 });
+    });
+
+    it("should be null if piece cannot be retrieved", () => {
+      const piece = player1.pieces[0];
+      const board = new Board();
+      board.init(players);
+      board.flattenedSlots = [];
+
+      const location = board.getPieceLocation(piece);
+
+      assertEquals(location, null);
+    });
+  });
+
+  describe("getPieceSlot", () => {
+    it("can get piece slot", () => {
+      const piece = player1.pieces[0];
+      const board = new Board();
+      board.init(players);
+      board.flattenedSlots = [{ x: 0, y: 0, piece }];
+
+      const slot = board.getPieceSlot(piece);
+
+      assertEquals(slot, { x: 0, y: 0, piece });
+    });
+
+    it("should be null if piece cannot be retrieved", () => {
+      const piece = player1.pieces[0];
+      const board = new Board();
+      board.init(players);
+      board.flattenedSlots = [];
+
+      const slot = board.getPieceSlot(piece);
+
+      assertEquals(slot, null);
+    });
+  });
+
+  describe("movePieceTo", () => {
+    it("can move a piece", () => {
+      const piece = player1.pieces[0];
+      const board = new Board();
+      board.init(players);
+      const turn = board.turn;
+      const positionX = 0;
+      const positionY = 0;
+      const targetX = 0;
+      const targetY = 1;
+      const currentLocation = { x: positionX, y: positionY };
+      const movableSpy = simpleStub(turn, "isPieceMoveable", true);
+      const turnSpy = simpleStub(board, "isPlayerTurn", true);
+      const inBoardSpy = simpleStub(board, "isSlotInBoard", true);
+      const distanceSpy = simpleStub(board, "isSlotDistanceInBounds", true);
+      const revealSpy = simpleStub(board, "isSlotInRevealedZone", true);
+      const emptySlotSpy = simpleStub(board, "isSlotEmpty", true);
+      const playSpy = simpleStub(turn, "registerPlay", undefined);
+      const locationSpy = simpleStub(
+        board,
+        "getPieceLocation",
+        currentLocation,
+      );
+      const boardUpdateSpy = simpleStub(
+        board,
+        "broadcastBoardUpdate",
+        undefined,
+      );
+
+      board.movePieceTo(piece, targetX, targetY);
+
+      const positionSlot = board.slots[positionY][positionX];
+      const targetSlot = board.slots[targetY][targetX];
+
+      spyContext([
+        movableSpy,
+        turnSpy,
+        inBoardSpy,
+        distanceSpy,
+        revealSpy,
+        emptySlotSpy,
+        playSpy,
+        boardUpdateSpy,
+        locationSpy,
+      ], () => {
+        assertSpyCall(movableSpy, 0, { args: [piece] });
+        assertSpyCall(turnSpy, 0, { args: [player1] });
+        assertSpyCall(inBoardSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(distanceSpy, 0, { args: [piece, targetX, targetY] });
+        assertSpyCall(revealSpy, 0, { args: [piece, targetX, targetY] });
+        assertSpyCall(emptySlotSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(locationSpy, 0, { args: [piece] });
+        assertEquals(positionSlot.piece, null);
+        assertEquals(targetSlot.piece, piece);
+        assertSpyCalls(boardUpdateSpy, 1);
+        assertSpyCalls(playSpy, 1);
+      });
+    });
+  });
+
+  describe("killPieceAt", () => {
+    it("can kill a piece", () => {
+      const killerPlayer = player2;
+      const victimPlayer = player1;
+      const victim = victimPlayer.pieces[0];
+      const board = new Board();
+      board.init(players);
+      const turn = board.turn;
+      const targetX = 0;
+      const targetY = 1;
+      const targetSlot = { x: targetX, y: targetY, piece: victim };
+      const turnSpy = simpleStub(board, "isPlayerTurn", true);
+      const killableSpy = simpleStub(board, "getKillableSlotsForPlayer", [
+        targetSlot,
+      ]);
+      const inBoardSpy = simpleStub(board, "isSlotInBoard", true);
+      const revealSpy = simpleStub(board, "isSlotInRevealedZone", true);
+      const emptySlotSpy = simpleStub(board, "isSlotEmpty", false);
+      const getSlotSpy = simpleStub(board, "getSlot", targetSlot);
+      const playSpy = simpleStub(turn, "registerPlay", undefined);
+      const nextSpy = simpleStub(turn, "triggerNext", undefined);
+      const looseSpy = simpleStub(turn, "checkLooseCondition", undefined);
+      const boardUpdateSpy = simpleStub(
+        board,
+        "broadcastBoardUpdate",
+        undefined,
+      );
+
+      board.killPieceAt(killerPlayer, targetX, targetY);
+
+      spyContext([
+        turnSpy,
+        killableSpy,
+        inBoardSpy,
+        revealSpy,
+        emptySlotSpy,
+        getSlotSpy,
+        playSpy,
+        nextSpy,
+        looseSpy,
+        boardUpdateSpy,
+      ], () => {
+        assertSpyCall(turnSpy, 0, { args: [killerPlayer] });
+        assertSpyCall(killableSpy, 0, { args: [killerPlayer] });
+        assertSpyCall(inBoardSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(emptySlotSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(getSlotSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(revealSpy, 0, { args: [victim, targetX, targetY] });
+        assertSpyCalls(playSpy, Rules.COUNT_KILL_AS_TURN_MOVE ? 1 : 0);
+        assertSpyCalls(nextSpy, 0);
+        assertSpyCalls(looseSpy, 1);
+        assertSpyCalls(boardUpdateSpy, 1);
+      });
+    });
+
+    it("should trigger next turn if game is waiting for a kill", () => {
+      const killerPlayer = player2;
+      const victimPlayer = player1;
+      const victim = victimPlayer.pieces[0];
+      const board = new Board();
+      board.init(players);
+      const turn = board.turn;
+      const targetX = 0;
+      const targetY = 1;
+      const targetSlot = { x: targetX, y: targetY, piece: victim };
+      const turnSpy = simpleStub(board, "isPlayerTurn", true);
+      const killableSpy = simpleStub(board, "getKillableSlotsForPlayer", [
+        targetSlot,
+      ]);
+      const inBoardSpy = simpleStub(board, "isSlotInBoard", true);
+      const revealSpy = simpleStub(board, "isSlotInRevealedZone", true);
+      const emptySlotSpy = simpleStub(board, "isSlotEmpty", false);
+      const getSlotSpy = simpleStub(board, "getSlot", targetSlot);
+      const playSpy = simpleStub(turn, "registerPlay", undefined);
+      const nextSpy = simpleStub(turn, "triggerNext", undefined);
+      const looseSpy = simpleStub(turn, "checkLooseCondition", undefined);
+      const boardUpdateSpy = simpleStub(
+        board,
+        "broadcastBoardUpdate",
+        undefined,
+      );
+
+      turn.waitForKill = true;
+      board.killPieceAt(killerPlayer, targetX, targetY);
+
+      spyContext([
+        turnSpy,
+        killableSpy,
+        inBoardSpy,
+        revealSpy,
+        emptySlotSpy,
+        getSlotSpy,
+        playSpy,
+        nextSpy,
+        looseSpy,
+        boardUpdateSpy,
+      ], () => {
+        assertSpyCall(turnSpy, 0, { args: [killerPlayer] });
+        assertSpyCall(killableSpy, 0, { args: [killerPlayer] });
+        assertSpyCall(inBoardSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(emptySlotSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(getSlotSpy, 0, { args: [targetX, targetY] });
+        assertSpyCall(revealSpy, 0, { args: [victim, targetX, targetY] });
+        assertSpyCalls(playSpy, Rules.COUNT_KILL_AS_TURN_MOVE ? 1 : 0);
+        assertSpyCalls(nextSpy, 1);
+        assertSpyCalls(looseSpy, 0); // Loose condition will be checked by Turn#triggerNext, represented here by nextSpy
+        assertSpyCalls(boardUpdateSpy, 1);
+        assertEquals(turn.waitForKill, false);
+      });
+    });
+  });
+
+  describe("isPlayerTurn", () => {
+    it("can determine if given player has to play", () => {
+      const board = new Board();
+      board.init(players);
+
+      const isPlayer1Turn = board.isPlayerTurn(player1);
+      const isPlayer2Turn = board.isPlayerTurn(player2);
+
+      assertEquals(isPlayer1Turn, true);
+      assertEquals(isPlayer2Turn, false);
+    });
+  });
+
+  describe("getPlayerById", () => {
+    it("can get a player with given id", () => {
+      const board = new Board();
+      board.init(players);
+
+      const player = board.getPlayerById(player1.id);
+
+      assertEquals(player, player1);
+    });
+  });
+
+  describe("onPlayerLost", () => {
+    it("should remove all player pieces", () => {
+      const board = new Board();
+      board.init(players);
+
+      board.onPlayerLost(player1);
+
+      assertEquals(player1.pieces.length, 0);
+    });
+  });
+
+  describe("broadcastBoardUpdate", () => {
+    it("can broadcast a board update to every players", () => {
+      const board = new Board();
+      board.init(players);
+      const player1Spy = simpleStub(
+        player1.messenger,
+        "sendMessage",
+        undefined,
+      );
+
+      const player2Spy = simpleStub(
+        player2.messenger,
+        "sendMessage",
+        undefined,
+      );
+
+      board.broadcastBoardUpdate();
+
+      spyContext([player1Spy, player2Spy], () => {
+        assertSpyCalls(player1Spy, 1);
+        assertSpyCalls(player2Spy, 1);
+      });
+    });
+  });
+
+  describe("broadcastPlayersUpdate", () => {
+    it("can broadcast a player update to every players", () => {
+      const board = new Board();
+      board.init(players);
+      const player1Spy = simpleStub(
+        player1.messenger,
+        "sendMessage",
+        undefined,
+      );
+
+      const player2Spy = simpleStub(
+        player2.messenger,
+        "sendMessage",
+        undefined,
+      );
+
+      board.broadcastPlayersUpdate();
+
+      spyContext([player1Spy, player2Spy], () => {
+        assertSpyCalls(player1Spy, 1);
+        assertSpyCalls(player2Spy, 1);
       });
     });
   });

@@ -19,7 +19,7 @@ import {
 } from "../Message.ts";
 import { Board } from "../../domain/Board.ts";
 import { Player } from "../../model/Player.ts";
-import { Explorer } from "../../model/Piece.ts";
+import { Explorer, Shooter } from "../../model/Piece.ts";
 import {
   assertThrows,
   FakeMessenger,
@@ -39,7 +39,7 @@ const player1 = new Player({
     xModifier: 1,
     yModifier: 1,
   },
-  pieces: Rules.PLAYER_PIECES_GENERATOR("1"),
+  pieces: [new Explorer("player1"), new Shooter("player1")],
   messenger: new FakeMessenger([], () => {}),
 });
 
@@ -52,7 +52,7 @@ const player2 = new Player({
     xModifier: -1,
     yModifier: -1,
   },
-  pieces: Rules.PLAYER_PIECES_GENERATOR("2"),
+  pieces: [new Explorer("player2"), new Shooter("player2")],
   messenger: new FakeMessenger([], () => {}),
 });
 
@@ -66,7 +66,7 @@ describe("SendableMessage", () => {
       xModifier: -1,
       yModifier: 1,
     },
-    pieces: Rules.PLAYER_PIECES_GENERATOR("3"),
+    pieces: [new Explorer("player3"), new Shooter("player3")],
     messenger: new FakeMessenger([], () => {}),
   });
 
@@ -235,52 +235,52 @@ describe("ReceivableMessage", () => {
       const board = new Board();
       board.init([player1, player2]);
       const waitingPlayers: Player[] = [];
-      const onGameStarted = spy();
-      const messenger = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger = new FakeMessenger(waitingPlayers, startGame);
       const message = new HandshakeMessage(
         "new player",
         messenger,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message.execute(board);
 
-      assertSpyCalls(onGameStarted, 0);
+      assertSpyCalls(startGame, 0);
       assertEquals(waitingPlayers.length, 0);
     });
 
     it("should add a player to the waiting player list if a new player joins and no game is started", () => {
       const waitingPlayers: Player[] = [];
-      const onGameStarted = spy();
-      const messenger = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger = new FakeMessenger(waitingPlayers, startGame);
       const message = new HandshakeMessage(
         "new player",
         messenger,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message.execute(undefined);
 
-      assertSpyCalls(onGameStarted, 0);
+      assertSpyCalls(startGame, 0);
       assertEquals(waitingPlayers.length, 1);
     });
 
     it("should start a game if a new player joins and PLAYER_COUNT is reached", () => {
       const waitingPlayers: Player[] = [player1];
-      const onGameStarted = spy();
-      const messenger = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger = new FakeMessenger(waitingPlayers, startGame);
       const message = new HandshakeMessage(
         "new player",
         messenger,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message.execute(undefined);
 
-      assertSpyCalls(onGameStarted, 1);
+      assertSpyCalls(startGame, 1);
       assertEquals(waitingPlayers.length, 2);
     });
 
@@ -288,18 +288,18 @@ describe("ReceivableMessage", () => {
       const board = new Board();
       board.init([player1, player2]);
       const waitingPlayers: Player[] = [];
-      const onGameStarted = spy();
-      const messenger = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger = new FakeMessenger(waitingPlayers, startGame);
       const message = new HandshakeMessage(
         player2.id,
         messenger,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message.execute(board);
 
-      assertSpyCalls(onGameStarted, 0);
+      assertSpyCalls(startGame, 0);
       assertEquals(waitingPlayers.length, 0);
       assertEquals(board.players[1].messenger, messenger);
     });
@@ -308,26 +308,26 @@ describe("ReceivableMessage", () => {
       const board = new Board();
       board.init([player1, player2]);
       const waitingPlayers: Player[] = [];
-      const onGameStarted = spy();
-      const messenger1 = new FakeMessenger(waitingPlayers, onGameStarted);
-      const messenger2 = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger1 = new FakeMessenger(waitingPlayers, startGame);
+      const messenger2 = new FakeMessenger(waitingPlayers, startGame);
       const message1 = new HandshakeMessage(
         "player1",
         messenger1,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
       const message2 = new HandshakeMessage(
         "player2",
         messenger2,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message1.execute(board);
       message2.execute(board);
 
-      assertSpyCalls(onGameStarted, 0);
+      assertSpyCalls(startGame, 0);
       assertEquals(waitingPlayers.length, 0);
       assertEquals(board.players[0].messenger, messenger1);
       assertEquals(board.players[1].messenger, messenger2);
@@ -337,20 +337,20 @@ describe("ReceivableMessage", () => {
       const board = new Board();
       board.init([player1, player2]);
       const waitingPlayers: Player[] = [];
-      const onGameStarted = spy();
-      const messenger = new FakeMessenger(waitingPlayers, onGameStarted);
+      const startGame = spy();
+      const messenger = new FakeMessenger(waitingPlayers, startGame);
       const messengerSpy = multipleStub(messenger, "sendMessage", new Array(3));
       const message = new HandshakeMessage(
         player2.id,
         messenger,
         waitingPlayers,
-        onGameStarted,
+        startGame,
       );
 
       message.execute(board);
 
       spyContext([messengerSpy], () => {
-        assertSpyCalls(onGameStarted, 0);
+        assertSpyCalls(startGame, 0);
         assertEquals(waitingPlayers.length, 0);
         assertSpyCalls(messengerSpy, 3);
       });

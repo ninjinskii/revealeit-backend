@@ -9,8 +9,8 @@ import {
   SendableMessage,
 } from "./Message.ts";
 import { WebSocketClient } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
-import { Board } from "../domain/Board.ts";
 import { LogAndPushErrorHandler } from "../util/BoardErrorHandler.ts";
+import { Board } from "../domain/Board.ts";
 
 export abstract class Messenger {
   constructor(
@@ -48,23 +48,18 @@ export abstract class Messenger {
 export class WebSocketMessenger extends Messenger {
   private onCloseListener?: (code: number) => void;
   private errorHandler = new LogAndPushErrorHandler(this);
-  private boundOnMessage = this.onMessage.bind(this)
-  private boundOnError = this.onError.bind(this)
-  private boundOnClose = this.onClose.bind(this)
 
   constructor(
     private webSocket: WebSocketClient,
-    private board: Board | undefined,
+    private board: Board,
     waitingPlayers: Player[],
     startGame: () => void,
   ) {
     super(waitingPlayers, startGame);
 
-    webSocket.on("message", this.boundOnMessage);
-
-    webSocket.on("error", this.boundOnError);
-
-    webSocket.on("close", this.boundOnClose);
+    webSocket.on("message", this.onMessage.bind(this));
+    webSocket.on("error", this.onError.bind(this));
+    webSocket.on("close", this.onClose.bind(this));
   }
 
   isClosed(): boolean {

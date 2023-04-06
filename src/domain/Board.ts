@@ -19,6 +19,8 @@ export class Board {
 
   init(players: Player[]) {
     this.players = players;
+    this.slots = [];
+    this.flattenedSlots = [];
 
     Rules.ensureCorrectPlayerCount(this);
 
@@ -89,7 +91,7 @@ export class Board {
     return this.slots[y][x];
   }
 
-  isMovementDistanceInBounds(
+  isSlotDistanceInBounds(
     piece: Piece,
     targetX: number,
     targetY: number,
@@ -106,12 +108,11 @@ export class Board {
       slot.y,
     );
 
-    return moveZone.filter((slot) =>
-      slot.x === targetX && slot.y === targetY
-    ).length > 0;
+    return moveZone.filter((slot) => slot.x === targetX && slot.y === targetY)
+      .length > 0;
   }
 
-  isMovementInRevealedZone(
+  isSlotInRevealedZone(
     piece: Piece,
     targetX: number,
     targetY: number,
@@ -262,7 +263,7 @@ export class Board {
       });
     }
 
-    if (!this.isMovementDistanceInBounds(piece, targetX, targetY)) {
+    if (!this.isSlotDistanceInBounds(piece, targetX, targetY)) {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move too fast",
         httpCode: 400,
@@ -270,7 +271,7 @@ export class Board {
       });
     }
 
-    if (!this.isMovementInRevealedZone(piece, targetX, targetY)) {
+    if (!this.isSlotInRevealedZone(piece, targetX, targetY)) {
       throw new BoardError({
         rawMessage: "Cannot move: trying to move outside piece's revealed zone",
         httpCode: 400,
@@ -342,8 +343,8 @@ export class Board {
       });
     }
 
-    const victimSlot = this.slots[y][x];
-    const victim = victimSlot.piece;
+    const victimSlot = this.getSlot(x, y);
+    const victim = victimSlot?.piece;
 
     if (!victim) {
       throw new BoardError({
@@ -353,8 +354,7 @@ export class Board {
       });
     }
 
-    if (!this.isMovementInRevealedZone(victim, x, y)) {
-      // needs test
+    if (!this.isSlotInRevealedZone(victim, x, y)) {
       throw new BoardError({
         rawMessage: "Cannot kill: trying to kill outside piece's revealed zone",
         httpCode: 400,
@@ -394,9 +394,8 @@ export class Board {
     if (this.turn.waitForKill) {
       this.turn.waitForKill = false;
       this.turn.triggerNext();
-      // avoid calling checkLooseConsitionMultiple times by doing:
-      // brodcastBoardUpdate
-      // return
+      this.broadcastBoardUpdate();
+      return;
     }
 
     this.turn.checkLooseCondition();
@@ -405,6 +404,10 @@ export class Board {
 
   isPlayerTurn(player: Player): boolean {
     return this.turn.getCurrentPlayer().id === player.id;
+  }
+
+  getPlayerById(id: string) {
+    return this.players.find((player) => player.id === id);
   }
 
   onPlayerLost(player: Player) {
@@ -423,5 +426,11 @@ export class Board {
       const message = new PlayersMessage(this);
       player.messenger.sendMessage(message);
     });
+  }
+
+  reset() {
+    this.players = [];
+    this.slots = [];
+    this.flattenedSlots = [];
   }
 }

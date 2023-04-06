@@ -16,6 +16,7 @@ import { Turn } from "../Turn.ts";
 import { Board } from "../Board.ts";
 import { Player } from "../../model/Player.ts";
 import { Rules } from "../Rules.ts";
+import { Explorer, Shooter } from "../../model/Piece.ts";
 
 describe("Turn", () => {
   const player1 = new Player({
@@ -27,7 +28,7 @@ describe("Turn", () => {
       xModifier: 1,
       yModifier: 1,
     },
-    pieces: Rules.PLAYER_PIECES_GENERATOR("1"),
+    pieces: [new Explorer("player1"), new Shooter("player1")],
     messenger: new FakeMessenger([], () => {}),
   });
 
@@ -40,15 +41,15 @@ describe("Turn", () => {
       xModifier: -1,
       yModifier: -1,
     },
-    pieces: Rules.PLAYER_PIECES_GENERATOR("2"),
+    pieces: [new Explorer("player2"), new Shooter("player2")],
     messenger: new FakeMessenger([], () => {}),
   });
 
   const players = [player1, player2];
 
   beforeEach(() => {
-    player1.pieces = Rules.PLAYER_PIECES_GENERATOR("1");
-    player2.pieces = Rules.PLAYER_PIECES_GENERATOR("2");
+    player1.pieces = [new Explorer("player1"), new Shooter("player1")];
+    player2.pieces = [new Explorer("player2"), new Shooter("player2")];
   });
 
   describe("getCurrentPlayer", () => {
