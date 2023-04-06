@@ -77,10 +77,12 @@ export class HandshakeMessage extends ReceiveableMessage {
       inGamePlayer.messenger = this.messenger;
 
       if (board) {
+        const configuration = new ConfigurationMessage();
         const updatePlayers = new PlayersMessage(board);
         const updateBoard = new BoardUpdateMessage(board, inGamePlayer);
         const updateTurn = new TurnMessage(board);
 
+        this.messenger.sendMessage(configuration);
         this.messenger.sendMessage(updatePlayers);
         this.messenger.sendMessage(updateBoard);
         this.messenger.sendMessage(updateTurn);
