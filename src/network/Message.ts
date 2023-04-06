@@ -14,6 +14,7 @@ export enum MessageType {
   HANDSHAKE = "handshake",
   TURN = "turn",
   LOST = "lost",
+  CONFIGURATION = "configuration",
 }
 
 abstract class Message {
@@ -44,7 +45,7 @@ export class HandshakeMessage extends ReceiveableMessage {
 
   execute(board?: Board) {
     const [playerId, playerName] = this.content.split(",");
-    const inGamePlayer = board?.getPlayerById(playerId)
+    const inGamePlayer = board?.getPlayerById(playerId);
     const waitingPlayer = this.waitingPlayers.find((player) =>
       player.id === playerId
     );
@@ -205,6 +206,17 @@ export class LostMessage extends SendableMessage {
   }
 
   prepare(): SendableMessage {
+    return this;
+  }
+}
+
+export class ConfigurationMessage extends SendableMessage {
+  constructor() {
+    super(MessageType.CONFIGURATION, "");
+  }
+
+  prepare(): SendableMessage {
+    this.content = Rules.BOARD_SIZE.toString();
     return this;
   }
 }
