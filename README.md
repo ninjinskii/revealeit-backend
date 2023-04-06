@@ -2,7 +2,8 @@
 Revealeit server hosting a single game between multiple players.
 
 ## Release process
-Deno deploy automatically deploy this project whenever master branch receive updates.
+- Create a tag named `x.x.x`
+- Push tag
 
 ## Run the project on your machine
 Make sure [traefik](https://github.com/ninjinskii/traefik) is running.
