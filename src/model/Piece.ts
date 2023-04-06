@@ -1,5 +1,5 @@
-import { ActionZone, Direction } from "./movement.ts";
-import { Ruler } from "./ruler.ts";
+import { ActionZone, Direction } from "../domain/ActionZone.ts";
+import { Rules } from "../domain/Rules.ts";
 
 export interface Piece {
   playerId: string;
@@ -13,7 +13,7 @@ export class Explorer implements Piece {
   name = "explorer";
   actionZone = new ActionZone({
     moveRange: 1,
-    revealRange: Ruler.BOARD_SIZE,
+    revealRange: Rules.BOARD_SIZE,
     killRange: 0,
     direction: Direction.ORTHOGONAL,
   });

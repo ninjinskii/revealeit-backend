@@ -2,98 +2,50 @@ import {
   WebSocketClient,
   WebSocketServer,
 } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
-import { Board } from "./domain/board.ts";
-import { Player } from "./domain/player.ts";
-import { Ruler } from "./domain/ruler.ts";
-import { MessageHandlerFactory, MessageReceiver } from "./network/message.ts";
+import { Board } from "./domain/Board.ts";
+import { Constants } from "./model/Constants.ts";
+import { Player } from "./model/Player.ts";
+import { WebSocketMessenger } from "./network/Messenger.ts";
 
 const serverWebSocket = new WebSocketServer(5000);
 const players: Player[] = [];
-let game: Board | undefined = undefined;
+const board = new Board();
 
 serverWebSocket.on(
   "connection",
   (webSocket: WebSocketClient) => {
-    webSocket.on("message", (message: string) => {
-      const messageFactory = new MessageHandlerFactory(
-        message,
-        webSocket,
-        players,
-        startGame,
-      );
-
-      const messageReceiver = new MessageReceiver(messageFactory);
-      messageReceiver.handleMessage(game);
-    });
-
-    webSocket.on("close", (code) => {
-      if (code === Ruler.WEB_SOCKET_CLOSE_END_GAME_NUMBER) {
-        resetGame();
-      }
-
-      if (game && game.players.every((player) => player.webSocket.isClosed)) {
-        resetGame();
-      }
-      // const isGameFinished = game && game.players.length === 0;
-
-      // if (isGameFinished) {
-      //   game = undefined;
-      // }
-
-      // if (game) {
-      //   const player = game.players.find(player => player.webSocket === webSocket)
-
-      //   if (player && player instanceof ActivePlayer && player.hasLost) {
-      //     resetGame()
-      //   }
-      // }
-
-      // if (game) {
-      //   const isAnotherPlayerDisconnected = game.players.filter((player) =>
-      //     player.webSocket.isClosed && player.webSocket !== webSocket
-      //   ).length >= 1;
-
-      //   if (isAnotherPlayerDisconnected) {
-      //     console.log("reset");
-      //     resetGame();
-      //   }
-      // }
-
-      // const isLastPlayer = game?.players.length === 1;
-
-      // if (isLastPlayer) {
-      //   players.forEach((player) => player.webSocket.closeForce());
-      //   players.length = 0;
-      //   game = undefined;
-      // }
-
-      // const isPlayerInGame = players.filter((player) =>
-      //   player.webSocket === webSocket
-      // );
-
-      // if (isPlayerInGame) {
-      //   players.forEach((player) => player.webSocket.closeForce());
-      //   players.length = 0;
-      //   game = undefined;
-      // }
-    });
+    const messenger = new WebSocketMessenger(
+      webSocket,
+      board,
+      players,
+      startGame,
+    );
+    messenger.setOnClosedListener(checkResetGame);
   },
 );
 
 function startGame() {
-  const board = new Board();
+  board.reset();
   board.init([...players]);
-  game = board;
   players.length = 0;
+}
+
+function checkResetGame(closeCode: number) {
+  const everybodyHasQuit = board.players.length &&
+    board.players.every((player) => player.messenger.isClosed());
+  const clientRequestGameToEnd =
+    closeCode === Constants.WEB_SOCKET_CLOSE_END_GAME_CODE;
+
+  if (everybodyHasQuit || clientRequestGameToEnd) {
+    resetGame();
+  }
 }
 
 function resetGame() {
   players
-    .filter((player) => !player.webSocket.isClosed)
-    .forEach((player) =>
-      player.webSocket.close(Ruler.WEB_SOCKET_CLOSE_DEFAULT_NUMBER)
-    );
+    .filter((player) => !player.messenger.isClosed())
+    .forEach((player) => player.messenger.endCommunication());
 
   players.length = 0;
-  game = undefined;
+  board.reset();
 }
