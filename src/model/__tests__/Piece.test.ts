@@ -10,6 +10,8 @@ describe("PieceDTO", () => {
       assertEquals(dto.playerId, piece.playerId);
       assertEquals(dto.name, piece.name);
       assertEquals(dto.killRange, piece.actionZone.killRange);
+      assertEquals(dto.direction, piece.actionZone.direction);
+      assertEquals(dto.direction, "orthogonal");
     });
 
     it("should return null if given Piece is null", () => {

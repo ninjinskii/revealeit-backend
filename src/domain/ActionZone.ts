@@ -1,9 +1,9 @@
 import { Slot } from "./Board.ts";
 
 export enum Direction {
-  ORTHOGONAL,
-  DIAGONAL,
-  ALL,
+  ORTHOGONAL = "orthogonal",
+  DIAGONAL = "diagonal",
+  ALL = "all",
 }
 
 interface ActionZoneOptions {

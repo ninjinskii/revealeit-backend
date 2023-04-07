@@ -40,6 +40,7 @@ export class PieceDTO {
     public playerId: string,
     public name: string,
     public killRange: number,
+    public direction: Direction,
   ) {}
 
   public static fromPiece(piece: Piece | null): PieceDTO | null {
@@ -51,6 +52,7 @@ export class PieceDTO {
       piece.playerId,
       piece.name,
       piece.actionZone.killRange,
+      piece.actionZone.direction,
     );
   }
 }
