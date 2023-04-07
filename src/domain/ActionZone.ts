@@ -79,7 +79,8 @@ export class ActionZone {
         const inRange =
           this.getDistance(positionX, positionY, slot.x, slot.y) <=
             diagonalRange;
-        const inDirection = slot.x - positionX === slot.y - positionY;
+        const inDirection =
+          Math.abs(slot.x - positionX) === Math.abs(slot.y - positionY);
 
         if (inRange && inDirection) {
           diagonal.push(slot);

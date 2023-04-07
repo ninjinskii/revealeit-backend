@@ -60,19 +60,22 @@ describe("ActionZone", () => {
     it("can resolve a diagonal zone", () => {
       const actionZone = new ActionZone({
         moveRange: 2,
-        revealRange: 5,
+        revealRange: 4,
         killRange: 1,
         direction: Direction.DIAGONAL,
       });
-      const x = 0;
+      const x = 1;
       const y = 1;
 
       const actual = actionZone.resolveReveal(slots, x, y);
       const expected = [
-        { x: 0, y: 1, piece: null },
-        { x: 1, y: 2, piece: null },
-        { x: 2, y: 3, piece: null },
-        { x: 3, y: 4, piece: null },
+        { x: 0, y: 0, piece: null },
+        { x: 2, y: 0, piece: null },
+        { x: 1, y: 1, piece: null },
+        { x: 0, y: 2, piece: null },
+        { x: 2, y: 2, piece: null },
+        { x: 3, y: 3, piece: null },
+        { x: 4, y: 4, piece: null },
       ];
 
       assertEquals(actual, expected);

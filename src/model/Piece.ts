@@ -15,9 +15,9 @@ export class Explorer implements Piece {
     moveRange: 1,
     revealRange: Rules.BOARD_SIZE,
     killRange: 0,
-    direction: Direction.ORTHOGONAL,
+    direction: Direction.DIAGONAL,
   });
-  originSpawnDelta = { dX: 0, dY: 0 };
+  originSpawnDelta = { dX: 1, dY: 0 };
 
   constructor(public playerId: string) {}
 }
@@ -30,7 +30,7 @@ export class Shooter implements Piece {
     killRange: 2,
     direction: Direction.ORTHOGONAL,
   });
-  originSpawnDelta = { dX: 0, dY: 1 };
+  originSpawnDelta = { dX: 1, dY: 1 };
 
   constructor(public playerId: string) {}
 }
