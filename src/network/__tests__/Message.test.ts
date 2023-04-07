@@ -339,7 +339,7 @@ describe("ReceivableMessage", () => {
       const waitingPlayers: Player[] = [];
       const startGame = spy();
       const messenger = new FakeMessenger(waitingPlayers, startGame);
-      const messengerSpy = multipleStub(messenger, "sendMessage", new Array(3));
+      const messengerSpy = multipleStub(messenger, "sendMessage", new Array(4));
       const message = new HandshakeMessage(
         player2.id,
         messenger,
@@ -352,7 +352,7 @@ describe("ReceivableMessage", () => {
       spyContext([messengerSpy], () => {
         assertSpyCalls(startGame, 0);
         assertEquals(waitingPlayers.length, 0);
-        assertSpyCalls(messengerSpy, 3);
+        assertSpyCalls(messengerSpy, 4);
       });
     });
   });

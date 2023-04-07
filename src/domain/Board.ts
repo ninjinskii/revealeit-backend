@@ -1,6 +1,6 @@
 import { Piece } from "../model/Piece.ts";
 import { Player } from "../model/Player.ts";
-import { BoardUpdateMessage, PlayersMessage } from "../network/Message.ts";
+import { BoardUpdateMessage, ConfigurationMessage, PlayersMessage } from "../network/Message.ts";
 import { BoardError } from "../util/BoardError.ts";
 import { Rules } from "./Rules.ts";
 import { Turn } from "./Turn.ts";
@@ -29,6 +29,7 @@ export class Board {
 
     Rules.ensureCorrectBoardSize(this);
 
+    this.broadcastConfiguration();
     this.broadcastBoardUpdate();
     this.broadcastPlayersUpdate();
     this.turn.start();
@@ -412,6 +413,13 @@ export class Board {
 
   onPlayerLost(player: Player) {
     player.pieces = [];
+  }
+
+  broadcastConfiguration() {
+    this.players.forEach((player) => {
+      const message = new ConfigurationMessage();
+      player.messenger.sendMessage(message);
+    });
   }
 
   broadcastBoardUpdate() {

@@ -7,7 +7,7 @@ interface LooseCondition {
 
 export enum LooseConditionDescriptor {
   NO_MORE_PIECE = "NO_MORE_PIECE",
-  NO_MORE_KILLER = "NO_MORE_KILER",
+  NO_MORE_KILLER = "NO_MORE_KILLER",
 }
 
 export class NoMorePieceLooseCondition implements LooseCondition {

@@ -5,6 +5,7 @@ Revealeit server hosting a single game between multiple players.
 - Merger target code in master
 - Create a tag named `x.x.x`
 - Push tag
+- Go to [deno deploy](https://dash.deno.com/projects/revealeit-backend/deployments), and promote deployment to production via the deployment tab
 
 ## Run the project on your machine
 Make sure [traefik](https://github.com/ninjinskii/traefik) is running.

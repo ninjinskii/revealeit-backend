@@ -72,6 +72,7 @@ describe("Board", () => {
       const board = new Board();
       const generateSlotsSpy = spy(board, "generateSlots");
       const initPiecesSpy = spy(board, "initPlayersPieces");
+      const configurationSpy = spy(board, "broadcastConfiguration");
       const boardUpdateSpy = spy(board, "broadcastBoardUpdate");
       const playersUpdateSpy = spy(board, "broadcastPlayersUpdate");
       const startTurnSpy = spy(board.turn, "start");
@@ -84,6 +85,7 @@ describe("Board", () => {
           boardSizeRuleSpy,
           generateSlotsSpy,
           initPiecesSpy,
+          configurationSpy,
           boardUpdateSpy,
           playersUpdateSpy,
           startTurnSpy,
@@ -94,6 +96,7 @@ describe("Board", () => {
           assertSpyCall(boardSizeRuleSpy, 0, { args: [board] });
           assertSpyCalls(generateSlotsSpy, 1);
           assertSpyCalls(initPiecesSpy, 1);
+          assertSpyCalls(configurationSpy, 1);
           assertSpyCalls(boardUpdateSpy, 1);
           assertSpyCalls(playersUpdateSpy, 1);
           assertSpyCalls(startTurnSpy, 1);
